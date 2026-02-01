@@ -14,7 +14,7 @@
 
         <!-- Launcher: Compose splash activity -->
         <activity
-            android:name=".loadingscreen.SplashComposeActivity"
+            android:name=".ui.loadingscreen.LoadingScreen"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.MindaGuard.Splash">
