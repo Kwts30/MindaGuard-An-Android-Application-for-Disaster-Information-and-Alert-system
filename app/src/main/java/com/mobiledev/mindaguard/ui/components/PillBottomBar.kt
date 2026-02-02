@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Home
@@ -33,6 +32,10 @@ data class PillTab(
     val icon: ImageVector
 )
 
+/**
+ * Floating pill-style bottom bar that overlays on top of screen content.
+ * There is NO full-width opaque background – only the rounded pill.
+ */
 @Composable
 fun PillBottomBar(
     currentRoute: String?,
@@ -47,12 +50,13 @@ fun PillBottomBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 24.dp)
+            .padding(bottom = 8.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
+        // Centered floating pill with rounded shape
         Row(
             modifier = Modifier
-                .align(Alignment.BottomStart)
+                .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .height(barHeight)
                 .clip(RoundedCornerShape(30.dp))
@@ -76,6 +80,7 @@ fun PillBottomBar(
                         ) { onSelectTab(tab.route) },
                     contentAlignment = Alignment.Center
                 ) {
+                    // Selected tab background highlight
                     if (isSelected) {
                         Box(
                             modifier = Modifier
@@ -93,7 +98,7 @@ fun PillBottomBar(
                         Icon(
                             imageVector = tab.icon,
                             contentDescription = tab.label,
-                            tint = if (isSelected) selectedTint else tint,
+                            tint = tint,
                             modifier = Modifier.size(24.dp)
                         )
                         Spacer(modifier = Modifier.height(2.dp))
@@ -120,17 +125,23 @@ private val previewTabs = listOf(
     PillTab(route = "menu", label = "Menu", icon = Icons.Outlined.Menu)
 )
 
-@Preview(showBackground = true, backgroundColor = 0xFFF2F2F2, name = "PillBottomBar - Light")
+@Preview(showBackground = true, backgroundColor = 0xFF000000, name = "PillBottomBar - Overlay")
 @Composable
 private fun PillBottomBarPreview_Light() {
     MaterialTheme {
         Surface {
-            PillBottomBar(
-                currentRoute = "home",
-                tabs = previewTabs,
-                onSelectTab = {},
-                modifier = Modifier.fillMaxWidth()
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF004D40)) // pretend this is your gradient image
+            ) {
+                PillBottomBar(
+                    currentRoute = "menu",
+                    tabs = previewTabs,
+                    onSelectTab = {},
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
+            }
         }
     }
 }

@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.MindaGuard" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.MindaGuard" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- Make the Android system status bar background black -->
+        <item name="android:statusBarColor">@android:color/black</item>
+    </style>
 
     <!-- Insert inside <resources> in your themes.xml -->
     <style name="Theme.MindaGuard.Splash" parent="Theme.SplashScreen">
         <!-- background color behind the icon -->
         <item name="windowSplashScreenBackground">@color/white</item>
+
+        <!-- Make status bar black even during splash/loading activity -->
+        <item name="android:statusBarColor">@android:color/black</item>
 
         <!-- the drawable shown in the splash (use your icon drawable) -->
         <item name="windowSplashScreenAnimatedIcon">@drawable/icon_only</item>
