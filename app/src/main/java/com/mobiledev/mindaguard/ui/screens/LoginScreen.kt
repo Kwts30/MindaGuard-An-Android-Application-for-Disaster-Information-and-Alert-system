@@ -14,7 +14,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -38,7 +37,7 @@ import com.mobiledev.mindaguard.R
 fun LoginScreen(
     onLoginSuccess: () -> Unit = {},
     onNavigateToRegister: () -> Unit = {},
-    onForgotPassword: () -> Unit = {}
+    @Suppress("UNUSED_PARAMETER") onForgotPassword: () -> Unit = {}
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -57,16 +56,31 @@ fun LoginScreen(
             contentScale = ContentScale.Crop
         )
 
-        // Logo above the card, outside of the white box (bigger)
-        Image(
-            painter = painterResource(id = R.drawable.icon_only),
-            contentDescription = "MindaGuard logo",
+        // Logo + Logo text above the card, outside of the white box
+        Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 56.dp)
-                .height(120.dp),
-            contentScale = ContentScale.Fit
-        )
+                .padding(top = 56.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.icon_only),
+                contentDescription = "MindaGuard logo",
+                modifier = Modifier.height(120.dp),
+                contentScale = ContentScale.Fit
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Image(
+                painter = painterResource(id = R.drawable.icon_text),
+                contentDescription = "MindaGuard logo text",
+                modifier = Modifier
+                    .height(36.dp)
+                    .padding(horizontal = 24.dp),
+                contentScale = ContentScale.Fit
+            )
+        }
 
         // More translucent white card (about 45% opacity)
         Card(

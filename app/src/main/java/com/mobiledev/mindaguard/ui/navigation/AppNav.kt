@@ -1,5 +1,8 @@
 package com.mobiledev.mindaguard.ui.navigation
 
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -16,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -24,6 +28,7 @@ import androidx.navigation.compose.rememberNavController
 import com.mobiledev.mindaguard.ui.MainPageScreen
 import com.mobiledev.mindaguard.ui.components.PillBottomBar
 import com.mobiledev.mindaguard.ui.components.PillTab
+import com.mobiledev.mindaguard.ui.menu.MenuActionCallbacks
 import com.mobiledev.mindaguard.ui.screens.AlertScreen
 import com.mobiledev.mindaguard.ui.screens.EmergencyScreen
 import com.mobiledev.mindaguard.ui.screens.LoginScreen
@@ -51,34 +56,57 @@ fun AppNav() {
         PillTab(Screen.Menu.route, "Menu", Icons.Outlined.Menu)
     )
 
+    val backStack by navController.currentBackStackEntryAsState()
+    val currentRoute = backStack?.destination?.route
+
+    // Show bottom bar only for the main "tab" destinations
+    // (Map is intended to be a full-screen experience)
+    val showBottomBar = currentRoute == Screen.Home.route ||
+        currentRoute == Screen.Menu.route
+
     Scaffold(
         contentWindowInsets = WindowInsets(0),
         containerColor = Color.Transparent
     ) { innerPadding ->
-
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)              // <- satisfies the lint check
+                .padding(innerPadding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-
-            /* ---------------- NAV CONTENT ---------------- */
-
             NavHost(
                 navController = navController,
-                startDestination = Screen.Home.route,
+                startDestination = Screen.Login.route,
                 modifier = Modifier.fillMaxSize()
             ) {
+                composable(Screen.Login.route) {
+                    LoginScreen(
+                        onLoginSuccess = {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Login.route) { inclusive = true }
+                            }
+                        },
+                        onNavigateToRegister = {
+                            navController.navigate(Screen.Register.route)
+                        }
+                    )
+                }
+
+                composable(Screen.Register.route) {
+                    RegisterScreen(
+                        onRegisterSuccess = {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Login.route) { inclusive = true }
+                            }
+                        },
+                        onBackClick = { navController.popBackStack() }
+                    )
+                }
 
                 composable(Screen.Home.route) {
                     MainPageScreen(
-                        onAlertClick = {
-                            navController.navigate(Screen.Alerts.route)
-                        },
-                        onEmergencyClick = {
-                            navController.navigate(Screen.Emergency.route)
-                        }
+                        onAlertClick = { navController.navigate(Screen.Alerts.route) },
+                        onEmergencyClick = { navController.navigate(Screen.Emergency.route) }
                     )
                 }
 
@@ -94,7 +122,38 @@ fun AppNav() {
                 }
 
                 composable(Screen.Menu.route) {
-                    MenuScreen()
+                    val context = LocalContext.current
+
+                    MenuScreen(
+                        actions = MenuActionCallbacks(
+                            onNotificationsClick = {
+                                // Open system notification settings for this app
+                                val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                    putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                }
+
+                                // Fallback to app details if notifications screen isn't available
+                                val safeIntent = if (intent.resolveActivity(context.packageManager) != null) {
+                                    intent
+                                } else {
+                                    Intent(
+                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                        Uri.fromParts("package", context.packageName, null)
+                                    )
+                                }
+
+                                context.startActivity(safeIntent)
+                            },
+                            onAppInfoClick = {
+                                // Open app info (App details) screen
+                                val intent = Intent(
+                                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                    Uri.fromParts("package", context.packageName, null)
+                                )
+                                context.startActivity(intent)
+                            }
+                        )
+                    )
                 }
 
                 composable(Screen.Alerts.route) {
@@ -106,17 +165,11 @@ fun AppNav() {
                 }
             }
 
-            /* ---------------- FLOATING PILL BOTTOM BAR ---------------- */
-
-            val backStack by navController.currentBackStackEntryAsState()
-            val currentRoute = backStack?.destination?.route
-
-            if (
-                currentRoute == Screen.Home.route ||
-                currentRoute == Screen.Menu.route
-            ) {
+            if (showBottomBar) {
                 PillBottomBar(
-                    modifier = Modifier.padding(bottom = 15.dp).align(Alignment.BottomCenter),
+                    modifier = Modifier
+                        .padding(bottom = 15.dp)
+                        .align(Alignment.BottomCenter),
                     currentRoute = currentRoute,
                     tabs = tabs,
                     onSelectTab = { route ->
@@ -129,57 +182,6 @@ fun AppNav() {
                         }
                     }
                 )
-            }
-        }
-    ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Screen.Login.route,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .background(MaterialTheme.colorScheme.background)
-        ) {
-            composable(Screen.Login.route) {
-                LoginScreen(
-                    onLoginSuccess = {
-                        navController.navigate(Screen.Home.route) {
-                            popUpTo(Screen.Login.route) { inclusive = true }
-                        }
-                    },
-                    onNavigateToRegister = {
-                        navController.navigate(Screen.Register.route)
-                    }
-                )
-            }
-
-            composable(Screen.Register.route) {
-                RegisterScreen(
-                    onRegisterSuccess = {
-                        navController.navigate(Screen.Home.route) {
-                            popUpTo(Screen.Login.route) { inclusive = true }
-                        }
-                    },
-                    onBackClick = { navController.popBackStack() }
-                )
-            }
-
-            composable(Screen.Home.route) {
-                MainPageScreen(
-                    onAlertClick = { navController.navigate(Screen.Alerts.route) },
-                    onEmergencyClick = { navController.navigate(Screen.Emergency.route) }
-                )
-            }
-
-            composable(Screen.Map.route) { MapScreen() }
-            composable(Screen.Menu.route) { MenuScreen() }
-
-            composable(Screen.Alerts.route) {
-                AlertScreen()
-            }
-
-            composable(Screen.Emergency.route) {
-                EmergencyScreen()
             }
         }
     }

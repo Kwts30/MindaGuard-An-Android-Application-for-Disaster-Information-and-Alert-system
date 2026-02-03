@@ -8,7 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -182,7 +182,7 @@ fun MapScreen(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = Icons.Filled.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -346,6 +346,7 @@ private fun EvacuationSheetContent(
 
 /* ----------------------------- Hazard Sheet ----------------------------- */
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HazardSheetContent(
     currentTab: MapTab,
@@ -407,53 +408,42 @@ private fun HazardSheetContent(
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            var expanded by remember { mutableStateOf(false) }
+            val options = remember { StormSurgePeriod.entries.toList() }
+
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                StormSurgeChip(
-                    text = "5 years",
-                    selected = stormSurgePeriod == StormSurgePeriod.YEAR_5,
-                    onClick = { onStormSurgePeriodChange(StormSurgePeriod.YEAR_5) }
+                OutlinedTextField(
+                    value = stormSurgePeriod.label,
+                    onValueChange = {},
+                    readOnly = true,
+                    singleLine = true,
+                    label = { Text("Select period") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth()
                 )
-                StormSurgeChip(
-                    text = "25 years",
-                    selected = stormSurgePeriod == StormSurgePeriod.YEAR_25,
-                    onClick = { onStormSurgePeriodChange(StormSurgePeriod.YEAR_25) }
-                )
-                StormSurgeChip(
-                    text = "100 years",
-                    selected = stormSurgePeriod == StormSurgePeriod.YEAR_100,
-                    onClick = { onStormSurgePeriodChange(StormSurgePeriod.YEAR_100) }
-                )
-            }
-        }
-    }
-}
 
-@Composable
-private fun StormSurgeChip(
-    text: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = Modifier
-            .height(36.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .clickable { onClick() },
-        color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else Color(0xFFF1F1F1)
-    ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Text(
-                text = text,
-                color = if (selected) MaterialTheme.colorScheme.primary else Color.Black,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
-            )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    options.forEach { period ->
+                        DropdownMenuItem(
+                            text = { Text(period.label) },
+                            onClick = {
+                                onStormSurgePeriodChange(period)
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -600,7 +590,7 @@ private fun MapTabs(
             .padding(4.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        MapTab.values().forEach { tab ->
+        MapTab.entries.forEach { tab ->
             val selected = tab == currentTab
             Surface(
                 modifier = Modifier
