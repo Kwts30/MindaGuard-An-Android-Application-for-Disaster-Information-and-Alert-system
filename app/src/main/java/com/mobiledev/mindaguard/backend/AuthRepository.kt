@@ -1,44 +1,37 @@
 package com.mobiledev.mindaguard.backend
 
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.auth.providers.builtin.Email
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import kotlinx.coroutines.tasks.await
 
 /**
- * Repository that wraps all Supabase Auth calls.
- * All methods are suspend functions to be called from a ViewModel coroutine.
+ * Repository that wraps Firebase Auth calls.
+ * All methods are suspend functions — call them from a ViewModel coroutine.
  */
+@Suppress("unused")
 class AuthRepository {
 
-    private val auth = SupabaseClient.client.auth
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
-    /**
-     * Sign in with email + password.
-     * Throws an exception (message surfaced to UI) on failure.
-     */
+    /** Sign in with email + password. Throws on failure. */
+    @Suppress("unused")
     suspend fun login(email: String, password: String) {
-        auth.signInWith(Email) {
-            this.email = email
-            this.password = password
-        }
+        auth.signInWithEmailAndPassword(email, password).await()
     }
 
-    /**
-     * Register a new user with email + password.
-     * Throws an exception on failure (e.g. email already taken, weak password).
-     */
+    /** Register a new user with email + password. Throws on failure. */
+    @Suppress("unused")
     suspend fun register(email: String, password: String) {
-        auth.signUpWith(Email) {
-            this.email = email
-            this.password = password
-        }
+        auth.createUserWithEmailAndPassword(email, password).await()
     }
 
-    /** Returns the currently signed-in user, or null if not logged in. */
-    fun currentUser() = auth.currentUserOrNull()
+    /** Returns the currently signed-in Firebase user, or null. */
+    @Suppress("unused")
+    fun currentUser(): FirebaseUser? = auth.currentUser
 
     /** Sign out the current user. */
-    suspend fun logout() {
+    @Suppress("unused")
+    fun logout() {
         auth.signOut()
     }
 }
-

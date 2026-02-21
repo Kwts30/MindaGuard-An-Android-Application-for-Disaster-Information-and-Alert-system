@@ -8,8 +8,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,11 +23,11 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mobiledev.mindaguard.R
+import com.mobiledev.mindaguard.backend.LoginUiState
+import com.mobiledev.mindaguard.backend.LoginViewModel
 
-/**
- * Login screen wired to LoginViewModel → Supabase Auth.
- */
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit = {},
@@ -40,7 +40,6 @@ fun LoginScreen(
 
     val uiState by viewModel.uiState.collectAsState()
 
-    // Navigate to Home when login succeeds
     LaunchedEffect(uiState) {
         if (uiState is LoginUiState.Success) {
             viewModel.resetState()
@@ -56,7 +55,6 @@ fun LoginScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Background illustration
         Image(
             painter = painterResource(id = R.drawable.bk),
             contentDescription = null,
@@ -116,7 +114,6 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Email field
                 OutlinedTextField(
                     value = email,
                     onValueChange = {
@@ -125,15 +122,9 @@ fun LoginScreen(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Email") },
-                    leadingIcon = {
-                        Icon(imageVector = Icons.Default.Email, contentDescription = "Email icon")
-                    },
+                    leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                     singleLine = true,
                     enabled = !isLoading,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    ),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Email,
                         imeAction = ImeAction.Next
@@ -142,7 +133,6 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Password field
                 OutlinedTextField(
                     value = password,
                     onValueChange = {
@@ -151,16 +141,10 @@ fun LoginScreen(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Password") },
-                    leadingIcon = {
-                        Icon(imageVector = Icons.Default.Lock, contentDescription = "Password icon")
-                    },
+                    leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                     singleLine = true,
                     enabled = !isLoading,
                     visualTransformation = PasswordVisualTransformation(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    ),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Password,
                         imeAction = ImeAction.Done
@@ -170,7 +154,6 @@ fun LoginScreen(
                     )
                 )
 
-                // Error message
                 if (errorMessage != null) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -183,7 +166,6 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // LOGIN button
                 Button(
                     onClick = { viewModel.login(email, password) },
                     modifier = Modifier
@@ -202,208 +184,12 @@ fun LoginScreen(
                             strokeWidth = 2.dp
                         )
                     } else {
-                        Text(
-                            text = "LOGIN",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        Text("LOGIN", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = "New user? Register now",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 4.dp)
-                        .clickable { onNavigateToRegister() },
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-    }
-}
-    onLoginSuccess: () -> Unit = {},
-    onNavigateToRegister: () -> Unit = {},
-    @Suppress("UNUSED_PARAMETER") onForgotPassword: () -> Unit = {}
-) {
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        // Background illustration from your Figma (the waves image)
-        Image(
-            painter = painterResource(id = R.drawable.bk),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
-
-        // Logo + Logo text above the card, outside of the white box
-        Column(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 56.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.icon_only),
-                contentDescription = "MindaGuard logo",
-                modifier = Modifier.height(120.dp),
-                contentScale = ContentScale.Fit
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Image(
-                painter = painterResource(id = R.drawable.icon_text),
-                contentDescription = "MindaGuard logo text",
-                modifier = Modifier
-                    .height(36.dp)
-                    .padding(horizontal = 24.dp),
-                contentScale = ContentScale.Fit
-            )
-        }
-
-        // More translucent white card (about 45% opacity)
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 112.dp)
-                .align(Alignment.Center),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.45f)
-            ),
-            shape = RoundedCornerShape(24.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "Welcome Back!",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Username
-                OutlinedTextField(
-                    value = username,
-                    onValueChange = {
-                        username = it
-                        errorMessage = null
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Username") },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "Username icon"
-                        )
-                    },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    ),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Text,
-                        imeAction = ImeAction.Next
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Password
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = {
-                        password = it
-                        errorMessage = null
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Password") },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Lock,
-                            contentDescription = "Password icon"
-                        )
-                    },
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    ),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Password,
-                        imeAction = ImeAction.Done
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onDone = {
-                            if (username.isNotBlank() && password.isNotBlank()) {
-                                onLoginSuccess()
-                            } else {
-                                errorMessage = "Please enter username and password"
-                            }
-                        }
-                    )
-                )
-
-                if (errorMessage != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = errorMessage ?: "",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // LOGIN button – wide and rounded like in Figma
-                Button(
-                    onClick = {
-                        if (username.isNotBlank() && password.isNotBlank()) {
-                            onLoginSuccess()
-                        } else {
-                            errorMessage = "Please enter username and password"
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(999.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Text(
-                        text = "LOGIN",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Helper text row – "New user? Register now" style
                 Text(
                     text = "New user? Register now",
                     style = MaterialTheme.typography.bodySmall,

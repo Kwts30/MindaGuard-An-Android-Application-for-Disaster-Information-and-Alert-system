@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "264410755515",
+    "project_id": "mindaguard-47461",
+    "storage_bucket": "mindaguard-47461.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:264410755515:android:3af8850fca33f2be7ad49e",
+        "android_client_info": {
+          "package_name": "com.mobiledev.mindaguard"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAPbnZXs_GrKKeETjNO3UkQ5hgjZo9w6Xg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

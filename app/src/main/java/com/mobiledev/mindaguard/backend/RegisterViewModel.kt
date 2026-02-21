@@ -2,6 +2,8 @@ package com.mobiledev.mindaguard.backend
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -56,9 +58,13 @@ class RegisterViewModel(
             try {
                 repository.register(email.trim(), password)
                 _uiState.value = RegisterUiState.Success
+            } catch (_: FirebaseAuthUserCollisionException) {
+                _uiState.value = RegisterUiState.Error("This email is already registered. Please log in.")
+            } catch (_: FirebaseAuthWeakPasswordException) {
+                _uiState.value = RegisterUiState.Error("Password is too weak. Use at least 6 characters.")
             } catch (e: Exception) {
                 _uiState.value = RegisterUiState.Error(
-                    e.message?.let { parseSupabaseError(it) } ?: "Registration failed. Please try again."
+                    e.message ?: "Registration failed. Please try again."
                 )
             }
         }
@@ -67,17 +73,4 @@ class RegisterViewModel(
     fun resetState() {
         _uiState.value = RegisterUiState.Idle
     }
-
-    private fun parseSupabaseError(raw: String): String = when {
-        raw.contains("already registered", ignoreCase = true) ||
-                raw.contains("already been registered", ignoreCase = true) ->
-            "This email is already registered. Please log in."
-        raw.contains("password", ignoreCase = true) && raw.contains("short", ignoreCase = true) ->
-            "Password is too short. Use at least 6 characters."
-        raw.contains("network", ignoreCase = true) ||
-                raw.contains("Unable to resolve host", ignoreCase = true) ->
-            "No internet connection. Please check your network."
-        else -> "Registration failed: $raw"
-    }
 }
-
