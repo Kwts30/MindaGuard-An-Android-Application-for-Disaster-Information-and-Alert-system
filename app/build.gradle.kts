@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    kotlin("plugin.serialization") version "2.0.21"
 }
 
 android {
@@ -38,6 +39,19 @@ android {
 }
 
 dependencies {
+    // Supabase Kotlin client (Auth)
+    implementation(platform("io.github.jan-tennert.supabase:bom:3.1.4"))
+    implementation("io.github.jan-tennert.supabase:auth-kt")
+    implementation("io.github.jan-tennert.supabase:postgrest-kt")
+
+    // Ktor HTTP engine for Supabase
+    implementation("io.ktor:ktor-client-android:3.1.2")
+
+    // ViewModel + Coroutines
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.navigation:navigation-compose:2.8.0")
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.32.0")
