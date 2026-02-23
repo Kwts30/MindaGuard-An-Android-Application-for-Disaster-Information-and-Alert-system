@@ -2,11 +2,14 @@ package com.mobiledev.mindaguard.backend
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 sealed class RegisterUiState {
     object Idle : RegisterUiState()
@@ -57,6 +60,22 @@ class RegisterViewModel(
             _uiState.value = RegisterUiState.Loading
             try {
                 repository.register(email.trim(), password)
+
+                // Save profile data to Firestore
+                val uid = FirebaseAuth.getInstance().currentUser?.uid
+                if (uid != null) {
+                    val db = FirebaseFirestore.getInstance()
+                    val profileData = mapOf(
+                        "firstName" to firstName.trim(),
+                        "lastName"  to lastName.trim(),
+                        "email"     to email.trim(),
+                        "mobile"    to mobile.trim(),
+                        "district"  to district,
+                        "barangay"  to barangay
+                    )
+                    db.collection("users").document(uid).set(profileData).await()
+                }
+
                 _uiState.value = RegisterUiState.Success
             } catch (_: FirebaseAuthUserCollisionException) {
                 _uiState.value = RegisterUiState.Error("This email is already registered. Please log in.")
