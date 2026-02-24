@@ -1,14 +1,11 @@
 package com.mobiledev.mindaguard.backend
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Source
+import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
 data class UserProfile(
     val firstName: String = "",
@@ -36,6 +33,8 @@ class UserProfileViewModel : ViewModel() {
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
     val uiState: StateFlow<ProfileUiState> = _uiState
 
+    private var listenerReg: ListenerRegistration? = null
+
     init {
         loadProfile()
     }
@@ -47,28 +46,39 @@ class UserProfileViewModel : ViewModel() {
             return
         }
 
-        viewModelScope.launch {
-            _uiState.value = ProfileUiState.Loading
-            try {
-                // Try server first, fall back to cache if offline
-                val doc = try {
-                    db.collection("users").document(user.uid).get(Source.SERVER).await()
-                } catch (_: Exception) {
-                    db.collection("users").document(user.uid).get(Source.CACHE).await()
+        // Cancel any existing listener
+        listenerReg?.remove()
+
+        _uiState.value = ProfileUiState.Loading
+
+        // Real-time listener – updates UI whenever Firestore data changes
+        listenerReg = db.collection("users").document(user.uid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    _uiState.value = ProfileUiState.Error(error.message ?: "Failed to load profile")
+                    return@addSnapshotListener
                 }
+
+                // Fall back to Firebase Auth displayName if Firestore fields are missing
+                val authName = user.displayName ?: ""
+                val authParts = authName.trim().split(" ", limit = 2)
+                val fallbackFirst = authParts.getOrElse(0) { "" }
+                val fallbackLast  = authParts.getOrElse(1) { "" }
+
                 val profile = UserProfile(
-                    firstName  = doc.getString("firstName")  ?: "",
-                    lastName   = doc.getString("lastName")   ?: "",
-                    email      = doc.getString("email")      ?: user.email ?: "",
-                    mobile     = doc.getString("mobile")     ?: "",
-                    district   = doc.getString("district")   ?: "",
-                    barangay   = doc.getString("barangay")   ?: ""
+                    firstName = snapshot?.getString("firstName")?.takeIf { it.isNotBlank() } ?: fallbackFirst,
+                    lastName  = snapshot?.getString("lastName")?.takeIf { it.isNotBlank() }  ?: fallbackLast,
+                    email     = snapshot?.getString("email")     ?: user.email ?: "",
+                    mobile    = snapshot?.getString("mobile")    ?: "",
+                    district  = snapshot?.getString("district")  ?: "",
+                    barangay  = snapshot?.getString("barangay")  ?: ""
                 )
                 _uiState.value = ProfileUiState.Success(profile)
-            } catch (e: Exception) {
-                _uiState.value = ProfileUiState.Error(e.message ?: "Failed to load profile")
             }
-        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        listenerReg?.remove()
     }
 }
-

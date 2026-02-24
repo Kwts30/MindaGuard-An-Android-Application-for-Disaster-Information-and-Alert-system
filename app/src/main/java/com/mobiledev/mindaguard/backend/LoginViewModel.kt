@@ -21,34 +21,39 @@ class LoginViewModel(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<LoginUiState>(LoginUiState.Idle)
-    @Suppress("unused")
     val uiState: StateFlow<LoginUiState> = _uiState
 
-    @Suppress("unused")
-    fun login(email: String, password: String) {
+    fun login(email: String, password: String, onSuccess: () -> Unit) {
         if (email.isBlank() || password.isBlank()) {
             _uiState.value = LoginUiState.Error("Please enter your email and password")
             return
         }
-
         viewModelScope.launch {
             _uiState.value = LoginUiState.Loading
             try {
                 repository.login(email.trim(), password)
+                onSuccess()
                 _uiState.value = LoginUiState.Success
             } catch (_: FirebaseAuthInvalidUserException) {
                 _uiState.value = LoginUiState.Error("No account found with this email.")
             } catch (_: FirebaseAuthInvalidCredentialsException) {
                 _uiState.value = LoginUiState.Error("Incorrect email or password.")
             } catch (e: Exception) {
+                val msg = e.message ?: ""
+                val isNetwork = msg.contains("network", ignoreCase = true) ||
+                        msg.contains("timeout", ignoreCase = true) ||
+                        msg.contains("timed out", ignoreCase = true) ||
+                        msg.contains("connect", ignoreCase = true) ||
+                        msg.contains("resolve", ignoreCase = true) ||
+                        msg.contains("socket", ignoreCase = true)
                 _uiState.value = LoginUiState.Error(
-                    e.message ?: "Login failed. Please try again."
+                    if (isNetwork) "Poor connection. Tap to try again."
+                    else msg.ifBlank { "Login failed. Please try again." }
                 )
             }
         }
     }
 
-    @Suppress("unused")
     fun resetState() {
         _uiState.value = LoginUiState.Idle
     }

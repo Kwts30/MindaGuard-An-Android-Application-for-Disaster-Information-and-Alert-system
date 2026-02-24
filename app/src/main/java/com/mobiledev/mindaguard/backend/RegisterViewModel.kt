@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
+import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,7 +34,8 @@ class RegisterViewModel(
         lastName: String,
         mobile: String,
         barangay: String,
-        district: String
+        district: String,
+        onSuccess: () -> Unit
     ) {
         when {
             firstName.isBlank() || lastName.isBlank() || mobile.isBlank() ||
@@ -61,29 +63,52 @@ class RegisterViewModel(
             try {
                 repository.register(email.trim(), password)
 
-                // Save profile data to Firestore
-                val uid = FirebaseAuth.getInstance().currentUser?.uid
+                // Navigate immediately — account is created
+                onSuccess()
+
+                // Save profile in background (best-effort)
+                val currentUser = FirebaseAuth.getInstance().currentUser
+                val uid = currentUser?.uid
                 if (uid != null) {
-                    val db = FirebaseFirestore.getInstance()
-                    val profileData = mapOf(
-                        "firstName" to firstName.trim(),
-                        "lastName"  to lastName.trim(),
-                        "email"     to email.trim(),
-                        "mobile"    to mobile.trim(),
-                        "district"  to district,
-                        "barangay"  to barangay
-                    )
-                    db.collection("users").document(uid).set(profileData).await()
+                    val fullName = "${firstName.trim()} ${lastName.trim()}".trim()
+                    try {
+                        currentUser.updateProfile(
+                            UserProfileChangeRequest.Builder()
+                                .setDisplayName(fullName)
+                                .build()
+                        ).await()
+                    } catch (_: Exception) {}
+                    try {
+                        FirebaseFirestore.getInstance()
+                            .collection("users").document(uid)
+                            .set(mapOf(
+                                "firstName" to firstName.trim(),
+                                "lastName"  to lastName.trim(),
+                                "email"     to email.trim(),
+                                "mobile"    to mobile.trim(),
+                                "district"  to district,
+                                "barangay"  to barangay
+                            )).await()
+                    } catch (_: Exception) {}
                 }
 
                 _uiState.value = RegisterUiState.Success
+
             } catch (_: FirebaseAuthUserCollisionException) {
                 _uiState.value = RegisterUiState.Error("This email is already registered. Please log in.")
             } catch (_: FirebaseAuthWeakPasswordException) {
                 _uiState.value = RegisterUiState.Error("Password is too weak. Use at least 6 characters.")
             } catch (e: Exception) {
+                val msg = e.message ?: ""
+                val isNetwork = msg.contains("network", ignoreCase = true) ||
+                        msg.contains("timeout", ignoreCase = true) ||
+                        msg.contains("timed out", ignoreCase = true) ||
+                        msg.contains("connect", ignoreCase = true) ||
+                        msg.contains("resolve", ignoreCase = true) ||
+                        msg.contains("socket", ignoreCase = true)
                 _uiState.value = RegisterUiState.Error(
-                    e.message ?: "Registration failed. Please try again."
+                    if (isNetwork) "Poor connection. Tap to try again."
+                    else msg.ifBlank { "Registration failed. Please try again." }
                 )
             }
         }

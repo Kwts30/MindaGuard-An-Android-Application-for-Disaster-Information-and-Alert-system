@@ -113,7 +113,7 @@ fun AppNav() {
                         onRegisterSuccess = {
                             profileViewModel.loadProfile()
                             navController.navigate(Screen.Home.route) {
-                                popUpTo(Screen.Login.route) { inclusive = true }
+                                popUpTo(0) { inclusive = true }
                             }
                         },
                         onBackClick = { navController.popBackStack() }

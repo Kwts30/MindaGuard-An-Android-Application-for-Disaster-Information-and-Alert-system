@@ -94,13 +94,6 @@ fun RegisterScreen(
 
     val uiState by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(uiState) {
-        if (uiState is RegisterUiState.Success) {
-            viewModel.resetState()
-            onRegisterSuccess()
-        }
-    }
-
     val isLoading = uiState is RegisterUiState.Loading
     val errorMessage = (uiState as? RegisterUiState.Error)?.message
     val barangayList = davaoDistricts[selectedDistrict] ?: emptyList()
@@ -320,6 +313,34 @@ fun RegisterScreen(
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.fillMaxWidth()
                     )
+                    // If it looks like a network error, show a Try Again button
+                    val isNetworkError = errorMessage.contains("network", ignoreCase = true) ||
+                            errorMessage.contains("failed", ignoreCase = true) ||
+                            errorMessage.contains("timeout", ignoreCase = true) ||
+                            errorMessage.contains("connect", ignoreCase = true) ||
+                            errorMessage.contains("poor", ignoreCase = true)
+                    if (isNetworkError) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        TextButton(
+                            onClick = {
+                                viewModel.resetState()
+                                viewModel.register(
+                                    email = email,
+                                    password = password,
+                                    confirmPassword = confirmPassword,
+                                    firstName = firstName,
+                                    lastName = lastName,
+                                    mobile = mobile,
+                                    barangay = selectedBarangay,
+                                    district = selectedDistrict,
+                                    onSuccess = onRegisterSuccess
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Tap to try again", color = MaterialTheme.colorScheme.primary)
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -334,7 +355,8 @@ fun RegisterScreen(
                             lastName = lastName,
                             mobile = mobile,
                             barangay = selectedBarangay,
-                            district = selectedDistrict
+                            district = selectedDistrict,
+                            onSuccess = onRegisterSuccess
                         )
                     },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
@@ -345,11 +367,18 @@ fun RegisterScreen(
                     )
                 ) {
                     if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(22.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.dp
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Creating account...", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                        }
                     } else {
                         Text("Create Account", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                     }

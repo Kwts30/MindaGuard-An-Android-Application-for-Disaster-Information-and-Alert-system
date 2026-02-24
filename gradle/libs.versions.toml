@@ -17,6 +17,7 @@ serializationJson = "1.10.0"
 firebaseBom = "34.9.0"
 accompanist = "0.36.0"
 maplibre = "12.3.1"
+coil = "2.7.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -47,6 +48,8 @@ firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
 accompanist-systemuicontroller = { group = "com.google.accompanist", name = "accompanist-systemuicontroller", version.ref = "accompanist" }
 maplibre-android-sdk = { group = "org.maplibre.gl", name = "android-sdk", version.ref = "maplibre" }
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+firebase-storage = { group = "com.google.firebase", name = "firebase-storage" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

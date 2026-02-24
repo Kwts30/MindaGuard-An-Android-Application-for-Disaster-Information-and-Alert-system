@@ -83,8 +83,19 @@ fun ProfileScreen(
                     }
                 }
                 is ProfileUiState.Error -> {
-                    // Show layout with placeholders even on error
-                    ProfileContent(profile = UserProfile())
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "Could not load profile",
+                                color = Color.White,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(onClick = { viewModel.loadProfile() }) {
+                                Text("Retry")
+                            }
+                        }
+                    }
                 }
                 is ProfileUiState.Success -> ProfileContent(profile = state.profile)
             }

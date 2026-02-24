@@ -40,13 +40,6 @@ fun LoginScreen(
 
     val uiState by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(uiState) {
-        if (uiState is LoginUiState.Success) {
-            viewModel.resetState()
-            onLoginSuccess()
-        }
-    }
-
     val isLoading = uiState is LoginUiState.Loading
     val errorMessage = (uiState as? LoginUiState.Error)?.message
 
@@ -150,7 +143,7 @@ fun LoginScreen(
                         imeAction = ImeAction.Done
                     ),
                     keyboardActions = KeyboardActions(
-                        onDone = { viewModel.login(email, password) }
+                        onDone = { viewModel.login(email, password, onLoginSuccess) }
                     )
                 )
 
@@ -162,12 +155,29 @@ fun LoginScreen(
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.fillMaxWidth()
                     )
+                    val isNetworkError = errorMessage.contains("network", ignoreCase = true) ||
+                            errorMessage.contains("failed", ignoreCase = true) ||
+                            errorMessage.contains("timeout", ignoreCase = true) ||
+                            errorMessage.contains("connect", ignoreCase = true) ||
+                            errorMessage.contains("poor", ignoreCase = true)
+                    if (isNetworkError) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        TextButton(
+                            onClick = {
+                                viewModel.resetState()
+                                viewModel.login(email, password, onLoginSuccess)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Tap to try again", color = MaterialTheme.colorScheme.primary)
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
-                    onClick = { viewModel.login(email, password) },
+                    onClick = { viewModel.login(email, password, onLoginSuccess) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
