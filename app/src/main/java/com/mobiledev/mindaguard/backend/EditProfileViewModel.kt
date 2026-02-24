@@ -18,6 +18,7 @@ sealed class EditProfileUiState {
     data class Error(val message: String) : EditProfileUiState()
 }
 
+@Suppress("unused")
 class EditProfileViewModel : ViewModel() {
 
     private val auth = FirebaseAuth.getInstance()
@@ -25,11 +26,14 @@ class EditProfileViewModel : ViewModel() {
     private val storage = FirebaseStorage.getInstance()
 
     private val _uiState = MutableStateFlow<EditProfileUiState>(EditProfileUiState.Idle)
+    @Suppress("unused")
     val uiState: StateFlow<EditProfileUiState> = _uiState
 
     private val _photoUrl = MutableStateFlow<String?>(null)
+    @Suppress("unused")
     val photoUrl: StateFlow<String?> = _photoUrl
 
+    @Suppress("unused")
     fun loadCurrentPhoto() {
         val uid = auth.currentUser?.uid ?: return
         viewModelScope.launch {
@@ -40,6 +44,7 @@ class EditProfileViewModel : ViewModel() {
         }
     }
 
+    @Suppress("unused")
     fun saveProfile(
         firstName: String,
         lastName: String,
@@ -91,6 +96,7 @@ class EditProfileViewModel : ViewModel() {
         }
     }
 
+    @Suppress("unused")
     fun resetState() {
         _uiState.value = EditProfileUiState.Idle
     }
