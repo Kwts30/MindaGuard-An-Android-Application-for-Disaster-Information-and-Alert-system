@@ -77,6 +77,7 @@ fun MainPageScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(backgroundColor)
+            .statusBarsPadding()
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         HomeContent(
@@ -144,7 +145,7 @@ private fun TopBar() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 35.dp),
+            .padding(top = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ) {

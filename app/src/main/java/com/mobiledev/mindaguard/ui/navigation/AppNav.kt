@@ -82,11 +82,10 @@ fun AppNav() {
     Scaffold(
         contentWindowInsets = WindowInsets(0),
         containerColor = Color.Transparent
-    ) { innerPadding ->
+    ) { _ ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
             NavHost(

@@ -33,6 +33,7 @@ fun EmergencyScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF5F6FA))
+            .statusBarsPadding()
             .padding(16.dp)
     ) {
         Column(

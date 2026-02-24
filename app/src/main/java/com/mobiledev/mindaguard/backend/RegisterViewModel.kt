@@ -86,7 +86,6 @@ class RegisterViewModel(
                                 "lastName"  to lastName.trim(),
                                 "email"     to email.trim(),
                                 "mobile"    to mobile.trim(),
-                                "district"  to district,
                                 "barangay"  to barangay
                             )).await()
                     } catch (_: Exception) {}

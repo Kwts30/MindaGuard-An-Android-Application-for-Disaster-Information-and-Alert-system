@@ -102,6 +102,7 @@ fun RegisterScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
     ) {
         Image(
             painter = painterResource(id = R.drawable.bk),

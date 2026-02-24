@@ -59,7 +59,8 @@ fun LoginScreen(
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 56.dp),
+                .statusBarsPadding()
+                .padding(top = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(

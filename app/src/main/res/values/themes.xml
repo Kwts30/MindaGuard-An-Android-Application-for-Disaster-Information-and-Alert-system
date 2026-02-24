@@ -2,8 +2,8 @@
 <resources>
 
     <style name="Theme.MindaGuard" parent="android:Theme.Material.Light.NoActionBar">
-        <!-- Make the Android system status bar background black -->
-        <item name="android:statusBarColor">@android:color/black</item>
+        <!-- Transparent status bar — content shows through; dark icons set via enableEdgeToEdge -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
     </style>
 
     <!-- Insert inside <resources> in your themes.xml -->
