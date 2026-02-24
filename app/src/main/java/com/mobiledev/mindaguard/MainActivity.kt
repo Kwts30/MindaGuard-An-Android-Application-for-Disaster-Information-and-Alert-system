@@ -14,7 +14,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.BLACK)
+            // light style = dark (black) icons/text on the status bar
+            // transparent scrim so the page content shows through behind the bar
+            statusBarStyle = SystemBarStyle.light(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT
+            ),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.BLACK)
         )
 
         setContent {

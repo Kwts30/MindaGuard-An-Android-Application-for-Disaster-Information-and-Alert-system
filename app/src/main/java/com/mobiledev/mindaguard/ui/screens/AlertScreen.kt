@@ -4,11 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -25,30 +25,42 @@ data class AlertItem(
 
 @Composable
 fun AlertScreen(
-    alerts: List<AlertItem> = sampleAlerts
+    alerts: List<AlertItem> = sampleAlerts,
+    onBackClick: () -> Unit = {}
 ) {
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF5F6FA))
-            .padding(16.dp)
     ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+        // Top bar with back button
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            IconButton(onClick = onBackClick) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            }
             Text(
                 text = "Alert Updates",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 4.dp)
             )
+        }
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(alerts) { alert ->
-                    AlertCard(alert)
-                }
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(bottom = 100.dp)
+        ) {
+            items(alerts) { alert ->
+                AlertCard(alert)
             }
         }
     }
@@ -58,46 +70,23 @@ fun AlertScreen(
 private fun AlertCard(alert: AlertItem) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(text = alert.title, fontWeight = FontWeight.SemiBold)
-            Text(
-                text = alert.location,
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
-            )
-            Text(
-                text = alert.description,
-                style = MaterialTheme.typography.bodySmall
-            )
-            Text(
-                text = alert.time,
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray
-            )
+            Text(text = alert.location, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Text(text = alert.description, style = MaterialTheme.typography.bodySmall)
+            Text(text = alert.time, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
         }
     }
 }
 
 private val sampleAlerts = listOf(
-    AlertItem(
-        title = "Flood Warning at Quimpo St.",
-        location = "Quimpo St., Davao City",
-        description = "Heavy rain causing flash floods.",
-        time = "Today • 7:30 PM"
-    ),
-    AlertItem(
-        title = "Flood Warning at UM Matina",
-        location = "UM Matina, Davao City",
-        description = "Heavy rains, possible river overflow.",
-        time = "Today • 6:45 PM"
-    )
+    AlertItem("Flood Warning at Quimpo St.", "Quimpo St., Davao City", "Heavy rain causing flash floods.", "Today • 7:30 PM"),
+    AlertItem("Flood Warning at UM Matina", "UM Matina, Davao City", "Heavy rains, possible river overflow.", "Today • 6:45 PM")
 )
 
 @Preview(showBackground = true)

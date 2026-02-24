@@ -8,8 +8,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,32 +23,31 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mobiledev.mindaguard.R
+import com.mobiledev.mindaguard.backend.LoginUiState
+import com.mobiledev.mindaguard.backend.LoginViewModel
 
-/**
- * Login screen implementation based on your Figma design:
- * - Wavy illustration background
- * - "Welcome Back!" title
- * - Username and Password input fields
- * - Full‑width rounded LOGIN button
- * - Small helper text under the button
- */
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit = {},
     onNavigateToRegister: () -> Unit = {},
-    @Suppress("UNUSED_PARAMETER") onForgotPassword: () -> Unit = {}
+    @Suppress("UNUSED_PARAMETER") onForgotPassword: () -> Unit = {},
+    viewModel: LoginViewModel = viewModel()
 ) {
-    var username by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val uiState by viewModel.uiState.collectAsState()
+
+    val isLoading = uiState is LoginUiState.Loading
+    val errorMessage = (uiState as? LoginUiState.Error)?.message
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Background illustration from your Figma (the waves image)
         Image(
             painter = painterResource(id = R.drawable.bk),
             contentDescription = null,
@@ -56,11 +55,12 @@ fun LoginScreen(
             contentScale = ContentScale.Crop
         )
 
-        // Logo + Logo text above the card, outside of the white box
+        // Logo above the card
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 56.dp),
+                .statusBarsPadding()
+                .padding(top = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
@@ -69,9 +69,7 @@ fun LoginScreen(
                 modifier = Modifier.height(120.dp),
                 contentScale = ContentScale.Fit
             )
-
             Spacer(modifier = Modifier.height(8.dp))
-
             Image(
                 painter = painterResource(id = R.drawable.icon_text),
                 contentDescription = "MindaGuard logo text",
@@ -82,7 +80,7 @@ fun LoginScreen(
             )
         }
 
-        // More translucent white card (about 45% opacity)
+        // Translucent card
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -110,109 +108,99 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Username
                 OutlinedTextField(
-                    value = username,
+                    value = email,
                     onValueChange = {
-                        username = it
-                        errorMessage = null
+                        email = it
+                        if (uiState is LoginUiState.Error) viewModel.resetState()
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Username") },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "Username icon"
-                        )
-                    },
+                    label = { Text("Email") },
+                    leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                     singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    ),
+                    enabled = !isLoading,
                     keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Text,
+                        keyboardType = KeyboardType.Email,
                         imeAction = ImeAction.Next
                     )
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Password
                 OutlinedTextField(
                     value = password,
                     onValueChange = {
                         password = it
-                        errorMessage = null
+                        if (uiState is LoginUiState.Error) viewModel.resetState()
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Password") },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Lock,
-                            contentDescription = "Password icon"
-                        )
-                    },
+                    leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                     singleLine = true,
+                    enabled = !isLoading,
                     visualTransformation = PasswordVisualTransformation(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    ),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Password,
                         imeAction = ImeAction.Done
                     ),
                     keyboardActions = KeyboardActions(
-                        onDone = {
-                            if (username.isNotBlank() && password.isNotBlank()) {
-                                onLoginSuccess()
-                            } else {
-                                errorMessage = "Please enter username and password"
-                            }
-                        }
+                        onDone = { viewModel.login(email, password, onLoginSuccess) }
                     )
                 )
 
                 if (errorMessage != null) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = errorMessage ?: "",
+                        text = errorMessage,
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.fillMaxWidth()
                     )
+                    val isNetworkError = errorMessage.contains("network", ignoreCase = true) ||
+                            errorMessage.contains("failed", ignoreCase = true) ||
+                            errorMessage.contains("timeout", ignoreCase = true) ||
+                            errorMessage.contains("connect", ignoreCase = true) ||
+                            errorMessage.contains("poor", ignoreCase = true)
+                    if (isNetworkError) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        TextButton(
+                            onClick = {
+                                viewModel.resetState()
+                                viewModel.login(email, password, onLoginSuccess)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Tap to try again", color = MaterialTheme.colorScheme.primary)
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // LOGIN button – wide and rounded like in Figma
                 Button(
-                    onClick = {
-                        if (username.isNotBlank() && password.isNotBlank()) {
-                            onLoginSuccess()
-                        } else {
-                            errorMessage = "Please enter username and password"
-                        }
-                    },
+                    onClick = { viewModel.login(email, password, onLoginSuccess) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
                     shape = RoundedCornerShape(999.dp),
+                    enabled = !isLoading,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text(
-                        text = "LOGIN",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(22.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("LOGIN", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Helper text row – "New user? Register now" style
                 Text(
                     text = "New user? Register now",
                     style = MaterialTheme.typography.bodySmall,

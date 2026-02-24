@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.google.services)
+    kotlin("plugin.serialization") version "2.3.10"
 }
 
 android {
@@ -38,12 +40,33 @@ android {
 }
 
 dependencies {
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-    implementation("androidx.navigation:navigation-compose:2.8.0")
-    implementation("com.google.accompanist:accompanist-systemuicontroller:0.32.0")
-    implementation("org.maplibre.gl:android-sdk:10.2.0")
-    implementation("org.maplibre.gl:android-sdk:10.2.0@aar")
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.storage)
+
+    // Image loading
+    implementation(libs.coil.compose)
+
+    // Coroutines
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.kotlinx.serialization.json)
+
+    // ViewModel
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+
+    // UI / Navigation
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.accompanist.systemuicontroller)
+    implementation(libs.maplibre.android.sdk)
+
+    // Core AndroidX
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
@@ -51,7 +74,9 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-    implementation("androidx.core:core-splashscreen:1.0.0")
+    implementation(libs.androidx.compose.material.icons.extended)
+
+    // Tests
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

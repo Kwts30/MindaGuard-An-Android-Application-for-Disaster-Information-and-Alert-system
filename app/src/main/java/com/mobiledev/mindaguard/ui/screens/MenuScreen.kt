@@ -60,6 +60,7 @@ fun MenuScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .statusBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 24.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {

@@ -15,6 +15,7 @@ import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,6 +26,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.auth.FirebaseAuth
+import com.mobiledev.mindaguard.backend.ProfileUiState
+import com.mobiledev.mindaguard.backend.UserProfileViewModel
 import com.mobiledev.mindaguard.ui.MainPageScreen
 import com.mobiledev.mindaguard.ui.components.PillBottomBar
 import com.mobiledev.mindaguard.ui.components.PillTab
@@ -34,6 +38,7 @@ import com.mobiledev.mindaguard.ui.screens.EmergencyScreen
 import com.mobiledev.mindaguard.ui.screens.LoginScreen
 import com.mobiledev.mindaguard.ui.screens.MapScreen
 import com.mobiledev.mindaguard.ui.screens.MenuScreen
+import com.mobiledev.mindaguard.ui.screens.ProfileScreen
 import com.mobiledev.mindaguard.ui.screens.RegisterScreen
 
 sealed class Screen(val route: String) {
@@ -44,11 +49,21 @@ sealed class Screen(val route: String) {
     object Menu : Screen("menu")
     object Alerts : Screen("alerts")
     object Emergency : Screen("emergency")
+    object Profile : Screen("profile")
 }
 
 @Composable
 fun AppNav() {
     val navController = rememberNavController()
+    val profileViewModel: UserProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val profileUiState by profileViewModel.uiState.collectAsState()
+
+    // If user is already signed in, skip straight to Home
+    val startDestination = if (FirebaseAuth.getInstance().currentUser != null) {
+        Screen.Home.route
+    } else {
+        Screen.Login.route
+    }
 
     val tabs = listOf(
         PillTab(Screen.Home.route, "Home", Icons.Outlined.Home),
@@ -67,21 +82,21 @@ fun AppNav() {
     Scaffold(
         contentWindowInsets = WindowInsets(0),
         containerColor = Color.Transparent
-    ) { innerPadding ->
+    ) { _ ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
             NavHost(
                 navController = navController,
-                startDestination = Screen.Login.route,
+                startDestination = startDestination,
                 modifier = Modifier.fillMaxSize()
             ) {
                 composable(Screen.Login.route) {
                     LoginScreen(
                         onLoginSuccess = {
+                            profileViewModel.loadProfile()
                             navController.navigate(Screen.Home.route) {
                                 popUpTo(Screen.Login.route) { inclusive = true }
                             }
@@ -95,8 +110,9 @@ fun AppNav() {
                 composable(Screen.Register.route) {
                     RegisterScreen(
                         onRegisterSuccess = {
+                            profileViewModel.loadProfile()
                             navController.navigate(Screen.Home.route) {
-                                popUpTo(Screen.Login.route) { inclusive = true }
+                                popUpTo(0) { inclusive = true }
                             }
                         },
                         onBackClick = { navController.popBackStack() }
@@ -123,45 +139,51 @@ fun AppNav() {
 
                 composable(Screen.Menu.route) {
                     val context = LocalContext.current
+                    val displayName = (profileUiState as? ProfileUiState.Success)
+                        ?.profile?.displayName ?: "User"
 
                     MenuScreen(
+                        userName = displayName,
                         actions = MenuActionCallbacks(
+                            onUserProfileClick = {
+                                navController.navigate(Screen.Profile.route)
+                            },
                             onNotificationsClick = {
-                                // Open system notification settings for this app
                                 val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
                                     putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
                                 }
-
-                                // Fallback to app details if notifications screen isn't available
-                                val safeIntent = if (intent.resolveActivity(context.packageManager) != null) {
-                                    intent
-                                } else {
-                                    Intent(
-                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                        Uri.fromParts("package", context.packageName, null)
-                                    )
-                                }
-
-                                context.startActivity(safeIntent)
+                                context.startActivity(intent)
                             },
                             onAppInfoClick = {
-                                // Open app info (App details) screen
                                 val intent = Intent(
                                     Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                                     Uri.fromParts("package", context.packageName, null)
                                 )
                                 context.startActivity(intent)
+                            },
+                            onLogoutClick = {
+                                FirebaseAuth.getInstance().signOut()
+                                navController.navigate(Screen.Login.route) {
+                                    popUpTo(0) { inclusive = true }
+                                }
                             }
                         )
                     )
                 }
 
                 composable(Screen.Alerts.route) {
-                    AlertScreen()
+                    AlertScreen(onBackClick = { navController.popBackStack() })
                 }
 
                 composable(Screen.Emergency.route) {
                     EmergencyScreen()
+                }
+
+                composable(Screen.Profile.route) {
+                    ProfileScreen(
+                        onBackClick = { navController.popBackStack() },
+                        viewModel = profileViewModel
+                    )
                 }
             }
 
