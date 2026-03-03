@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AddAlert
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Place
@@ -27,6 +28,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.auth.FirebaseAuth
+import com.mobiledev.mindaguard.backend.CommunityAlertsViewModel
 import com.mobiledev.mindaguard.backend.ProfileUiState
 import com.mobiledev.mindaguard.backend.UserProfileViewModel
 import com.mobiledev.mindaguard.ui.MainPageScreen
@@ -34,10 +36,13 @@ import com.mobiledev.mindaguard.ui.components.PillBottomBar
 import com.mobiledev.mindaguard.ui.components.PillTab
 import com.mobiledev.mindaguard.ui.menu.MenuActionCallbacks
 import com.mobiledev.mindaguard.ui.screens.AlertScreen
+import com.mobiledev.mindaguard.ui.screens.CommunityReport
+import com.mobiledev.mindaguard.ui.screens.CreateAlertScreen
 import com.mobiledev.mindaguard.ui.screens.EmergencyScreen
 import com.mobiledev.mindaguard.ui.screens.LoginScreen
 import com.mobiledev.mindaguard.ui.screens.MapScreen
 import com.mobiledev.mindaguard.ui.screens.MenuScreen
+import com.mobiledev.mindaguard.ui.screens.MyReportsScreen
 import com.mobiledev.mindaguard.ui.screens.ProfileScreen
 import com.mobiledev.mindaguard.ui.screens.RegisterScreen
 
@@ -50,6 +55,8 @@ sealed class Screen(val route: String) {
     object Alerts : Screen("alerts")
     object Emergency : Screen("emergency")
     object Profile : Screen("profile")
+    object CreateAlert : Screen("create_alert")
+    object MyReports : Screen("my_reports")
 }
 
 @Composable
@@ -57,6 +64,7 @@ fun AppNav() {
     val navController = rememberNavController()
     val profileViewModel: UserProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
     val profileUiState by profileViewModel.uiState.collectAsState()
+    val alertsViewModel: CommunityAlertsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 
     // If user is already signed in, skip straight to Home
     val startDestination = if (FirebaseAuth.getInstance().currentUser != null) {
@@ -68,24 +76,25 @@ fun AppNav() {
     val tabs = listOf(
         PillTab(Screen.Home.route, "Home", Icons.Outlined.Home),
         PillTab(Screen.Map.route, "Map", Icons.Outlined.Place),
+        PillTab(Screen.CreateAlert.route, "Create Alert", Icons.Outlined.AddAlert),
         PillTab(Screen.Menu.route, "Menu", Icons.Outlined.Menu)
     )
 
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
 
-    // Show bottom bar only for the main "tab" destinations
-    // (Map is intended to be a full-screen experience)
     val showBottomBar = currentRoute == Screen.Home.route ||
+        currentRoute == Screen.CreateAlert.route ||
         currentRoute == Screen.Menu.route
 
     Scaffold(
         contentWindowInsets = WindowInsets(0),
         containerColor = Color.Transparent
-    ) { _ ->
+    ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(paddingValues)
                 .background(MaterialTheme.colorScheme.background)
         ) {
             NavHost(
@@ -121,8 +130,10 @@ fun AppNav() {
 
                 composable(Screen.Home.route) {
                     MainPageScreen(
-                        onAlertClick = { navController.navigate(Screen.Alerts.route) },
-                        onEmergencyClick = { navController.navigate(Screen.Emergency.route) }
+                        alerts           = alertsViewModel.alerts,
+                        onAlertClick     = { navController.navigate(Screen.Alerts.route) },
+                        onEmergencyClick = { navController.navigate(Screen.Emergency.route) },
+                        onMapClick       = { navController.navigate(Screen.Map.route) }
                     )
                 }
 
@@ -148,6 +159,9 @@ fun AppNav() {
                             onUserProfileClick = {
                                 navController.navigate(Screen.Profile.route)
                             },
+                            onMyReportsClick = {
+                                navController.navigate(Screen.MyReports.route)
+                            },
                             onNotificationsClick = {
                                 val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
                                     putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
@@ -172,17 +186,39 @@ fun AppNav() {
                 }
 
                 composable(Screen.Alerts.route) {
-                    AlertScreen(onBackClick = { navController.popBackStack() })
+                    AlertScreen(
+                        alerts      = alertsViewModel.alerts,
+                        onBackClick = { navController.popBackStack() }
+                    )
                 }
 
                 composable(Screen.Emergency.route) {
                     EmergencyScreen()
                 }
 
+                composable(Screen.CreateAlert.route) {
+                    CreateAlertScreen(
+                        onBackClick = { navController.popBackStack() },
+                        onSubmit = { report: CommunityReport ->
+                            alertsViewModel.addReport(report)
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Home.route) { inclusive = false }
+                            }
+                        }
+                    )
+                }
+
                 composable(Screen.Profile.route) {
                     ProfileScreen(
                         onBackClick = { navController.popBackStack() },
                         viewModel = profileViewModel
+                    )
+                }
+
+                composable(Screen.MyReports.route) {
+                    MyReportsScreen(
+                        reports = alertsViewModel.myReports,
+                        onBackClick = { navController.popBackStack() }
                     )
                 }
             }

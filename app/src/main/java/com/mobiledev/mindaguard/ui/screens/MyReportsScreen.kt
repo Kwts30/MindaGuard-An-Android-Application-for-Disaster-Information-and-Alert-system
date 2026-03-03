@@ -27,8 +27,8 @@ import com.mobiledev.mindaguard.ui.components.SATELLITE_STYLE_JSON
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AlertScreen(
-    alerts: List<AlertFeedItem> = emptyList(),
+fun MyReportsScreen(
+    reports: List<AlertFeedItem> = emptyList(),
     onBackClick: () -> Unit = {}
 ) {
     var selectedAlert by remember { mutableStateOf<AlertFeedItem?>(null) }
@@ -50,32 +50,61 @@ fun AlertScreen(
             IconButton(onClick = onBackClick) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
             }
-            Text(
-                text = "Alert Updates",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 4.dp)
-            )
+            Column(modifier = Modifier.padding(start = 4.dp)) {
+                Text(
+                    text = "My Reports",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "${reports.size} alert${if (reports.size != 1) "s" else ""} submitted",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Gray
+                )
+            }
         }
 
-        if (alerts.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No alerts yet.", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+        if (reports.isEmpty()) {
+            // Empty state
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = Color(0xFFDDDDDD),
+                        modifier = Modifier.size(64.dp)
+                    )
+                    Text(
+                        text = "You haven't submitted any alerts yet.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray
+                    )
+                    Text(
+                        text = "Use 'Create Alert' to report an incident.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFFAAAAAA)
+                    )
+                }
             }
         } else {
             LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 contentPadding = PaddingValues(top = 4.dp, bottom = 100.dp)
             ) {
-                items(alerts) { alert ->
-                    AlertFeedCard(alert = alert, onReadMore = { selectedAlert = alert })
+                items(reports) { report ->
+                    MyReportCard(report = report, onViewDetails = { selectedAlert = report })
                 }
             }
         }
     }
 
-    // Bottom sheet detail view
+    // Detail bottom sheet (reuses same design as AlertScreen)
     if (selectedAlert != null) {
         ModalBottomSheet(
             onDismissRequest = { selectedAlert = null },
@@ -83,15 +112,15 @@ fun AlertScreen(
             containerColor = Color.White,
             shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
         ) {
-            AlertDetailSheet(alert = selectedAlert!!)
+            MyReportDetailSheet(alert = selectedAlert!!)
         }
     }
 }
 
-// ── Detail bottom sheet ───────────────────────────────────────────────────────
+// ── Detail sheet ──────────────────────────────────────────────────────────────
 
 @Composable
-private fun AlertDetailSheet(alert: AlertFeedItem) {
+private fun MyReportDetailSheet(alert: AlertFeedItem) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -99,32 +128,37 @@ private fun AlertDetailSheet(alert: AlertFeedItem) {
             .padding(bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // Handle
         Box(
             modifier = Modifier
-                .width(40.dp)
-                .height(4.dp)
+                .width(40.dp).height(4.dp)
                 .background(Color(0xFFDDDDDD), RoundedCornerShape(2.dp))
                 .align(Alignment.CenterHorizontally)
         )
 
-        // Badge + title
-        Row(
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        // "My Report" badge
+        Surface(
+            shape = RoundedCornerShape(50),
+            color = Color(0xFFE8F5E9)
         ) {
+            Text(
+                text = "✅  Your Report",
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = Color(0xFF2E7D32),
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Surface(shape = CircleShape, color = Color(0xFFFFEBEE), modifier = Modifier.size(44.dp)) {
-                Icon(
-                    Icons.Default.Warning, contentDescription = null,
-                    tint = Color(0xFFD32F2F),
-                    modifier = Modifier.padding(10.dp).fillMaxSize()
-                )
+                Icon(Icons.Default.Warning, contentDescription = null,
+                    tint = Color(0xFFD32F2F), modifier = Modifier.padding(10.dp).fillMaxSize())
             }
             Column {
                 Text(alert.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF1C1E21))
                 Spacer(Modifier.height(2.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF1565C0), modifier = Modifier.size(14.dp))
+                    Icon(Icons.Default.LocationOn, null, tint = Color(0xFF1565C0), modifier = Modifier.size(14.dp))
                     Text(alert.location, fontSize = 12.sp, color = Color(0xFF1565C0))
                 }
             }
@@ -132,13 +166,11 @@ private fun AlertDetailSheet(alert: AlertFeedItem) {
 
         HorizontalDivider(color = Color(0xFFEEEEEE))
 
-        // Description
         Text("Description", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = Color(0xFF555555))
         Text(alert.description, style = MaterialTheme.typography.bodyMedium, color = Color(0xFF1C1E21), lineHeight = 22.sp)
 
         HorizontalDivider(color = Color(0xFFEEEEEE))
 
-        // Coordinates
         Text("Pinned Location", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = Color(0xFF555555))
         Row(
             modifier = Modifier
@@ -148,7 +180,7 @@ private fun AlertDetailSheet(alert: AlertFeedItem) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF1565C0), modifier = Modifier.size(18.dp))
+            Icon(Icons.Default.LocationOn, null, tint = Color(0xFF1565C0), modifier = Modifier.size(18.dp))
             Text(
                 text = "%.4f, %.4f".format(alert.latitude, alert.longitude),
                 style = MaterialTheme.typography.bodySmall,
@@ -157,11 +189,9 @@ private fun AlertDetailSheet(alert: AlertFeedItem) {
             )
         }
 
-        // Mini map showing the pinned location
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
+                .fillMaxWidth().height(200.dp)
                 .background(Color(0xFFEEEEEE), RoundedCornerShape(16.dp))
         ) {
             MapLibreMapView(
@@ -174,27 +204,19 @@ private fun AlertDetailSheet(alert: AlertFeedItem) {
                 initialLng = alert.longitude,
                 initialZoom = 15.0
             )
-            // Pin marker overlay
-            Icon(
-                Icons.Default.LocationOn, contentDescription = null,
+            Icon(Icons.Default.LocationOn, null,
                 tint = Color(0xFFD32F2F),
-                modifier = Modifier.size(36.dp).align(Alignment.Center)
-            )
+                modifier = Modifier.size(36.dp).align(Alignment.Center))
         }
 
-        // Time
-        Text(
-            text = "Reported: ${alert.timeLabel}",
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.Gray
-        )
+        Text("Submitted: ${alert.timeLabel}", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
     }
 }
 
-// ── Card ──────────────────────────────────────────────────────────────────────
+// ── Report card ───────────────────────────────────────────────────────────────
 
 @Composable
-private fun AlertFeedCard(alert: AlertFeedItem, onReadMore: () -> Unit) {
+private fun MyReportCard(report: AlertFeedItem, onViewDetails: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -206,22 +228,20 @@ private fun AlertFeedCard(alert: AlertFeedItem, onReadMore: () -> Unit) {
             verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Surface(shape = CircleShape, color = Color(0xFFFFEBEE), modifier = Modifier.size(40.dp)) {
-                Icon(
-                    Icons.Default.Warning, contentDescription = null,
-                    tint = Color(0xFFD32F2F),
-                    modifier = Modifier.padding(9.dp).fillMaxSize()
-                )
+            Surface(shape = CircleShape, color = Color(0xFFE8F5E9), modifier = Modifier.size(40.dp)) {
+                Icon(Icons.Default.Warning, contentDescription = null,
+                    tint = Color(0xFF2E7D32),
+                    modifier = Modifier.padding(9.dp).fillMaxSize())
             }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(alert.title, fontWeight = FontWeight.Bold, fontSize = 13.sp,
+                Text(report.title, fontWeight = FontWeight.Bold, fontSize = 13.sp,
                     maxLines = 2, overflow = TextOverflow.Ellipsis, color = Color(0xFF1C1E21))
-                Text(alert.description, fontSize = 12.sp, color = Color.Gray,
+                Text(report.description, fontSize = 12.sp, color = Color.Gray,
                     maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(12.dp))
-                    Text(alert.location, fontSize = 11.sp, color = Color.Gray,
+                    Icon(Icons.Default.LocationOn, null, tint = Color(0xFF1565C0), modifier = Modifier.size(12.dp))
+                    Text(report.location, fontSize = 11.sp, color = Color(0xFF1565C0),
                         maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                 }
                 Row(
@@ -229,12 +249,9 @@ private fun AlertFeedCard(alert: AlertFeedItem, onReadMore: () -> Unit) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(alert.timeLabel, fontSize = 11.sp, color = Color(0xFF9E9E9E))
-                    TextButton(
-                        onClick = onReadMore,
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        Text("Read More", fontSize = 11.sp, color = Color(0xFF1565C0), fontWeight = FontWeight.SemiBold)
+                    Text(report.timeLabel, fontSize = 11.sp, color = Color(0xFF9E9E9E))
+                    TextButton(onClick = onViewDetails, contentPadding = PaddingValues(0.dp)) {
+                        Text("View Details", fontSize = 11.sp, color = Color(0xFF1565C0), fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -244,15 +261,14 @@ private fun AlertFeedCard(alert: AlertFeedItem, onReadMore: () -> Unit) {
 
 @Preview(showBackground = true)
 @Composable
-private fun AlertScreenPreview() {
+private fun MyReportsScreenPreview() {
     MindaGuardTheme(darkTheme = false) {
-        AlertScreen(
-            alerts = listOf(
-                AlertFeedItem("FLOOD WARNING AT QUIMPO ST.", "Quimpo St., Davao City",
-                    "Heavy Rain, Causing flash floods.", "Just Now", 7.0694, 125.6083),
-                AlertFeedItem("FLOOD WARNING AT UM MATINA", "UM Matina, Davao City",
-                    "Heavy rains, possible river overflow.", "5m ago", 7.0510, 125.5862)
+        MyReportsScreen(
+            reports = listOf(
+                AlertFeedItem("ROAD BLOCKED AT QUIMPO", "Quimpo Blvd, Davao City",
+                    "Large tree fell blocking the road.", "Just Now", 7.0694, 125.6083, true)
             )
         )
     }
 }
+
