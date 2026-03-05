@@ -25,25 +25,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
-// ── Colour + label helpers ────────────────────────────────────────────────────
-
-private val HazardType.accentColor: Color
-    get() = when (this) {
-        HazardType.FLOOD        -> Color(0xFF1565C0)
-        HazardType.LANDSLIDE    -> Color(0xFF6D4C41)
-        HazardType.EARTHQUAKE   -> Color(0xFF546E7A)
-        HazardType.STORM_SURGE  -> Color(0xFF00838F)
-        HazardType.TYPHOON      -> Color(0xFF6A1B9A)
-    }
-
-private val HazardType.badgeLabel: String
-    get() = when (this) {
-        HazardType.FLOOD        -> "FLOOD"
-        HazardType.LANDSLIDE    -> "LANDSLIDE"
-        HazardType.EARTHQUAKE   -> "EARTHQUAKE"
-        HazardType.STORM_SURGE  -> "STORM SURGE"
-        HazardType.TYPHOON      -> "TYPHOON"
-    }
+// ── Time helper ───────────────────────────────────────────────────────────────
 
 private fun LocalDateTime.toRelativeLabel(): String {
     val now     = LocalDateTime.now()

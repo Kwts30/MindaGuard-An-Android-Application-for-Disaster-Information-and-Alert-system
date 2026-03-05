@@ -27,6 +27,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mobiledev.mindaguard.R
 import com.mobiledev.mindaguard.backend.LoginUiState
 import com.mobiledev.mindaguard.backend.LoginViewModel
+import com.mobiledev.mindaguard.ui.components.ErrorWithRetry
 
 @Composable
 fun LoginScreen(
@@ -149,30 +150,13 @@ fun LoginScreen(
                 )
 
                 if (errorMessage != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = errorMessage,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    val isNetworkError = errorMessage.contains("network", ignoreCase = true) ||
-                            errorMessage.contains("failed", ignoreCase = true) ||
-                            errorMessage.contains("timeout", ignoreCase = true) ||
-                            errorMessage.contains("connect", ignoreCase = true) ||
-                            errorMessage.contains("poor", ignoreCase = true)
-                    if (isNetworkError) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        TextButton(
-                            onClick = {
-                                viewModel.resetState()
-                                viewModel.login(email, password, onLoginSuccess)
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Tap to try again", color = MaterialTheme.colorScheme.primary)
+                    ErrorWithRetry(
+                        errorMessage = errorMessage,
+                        onRetry = {
+                            viewModel.resetState()
+                            viewModel.login(email, password, onLoginSuccess)
                         }
-                    }
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))

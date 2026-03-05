@@ -3,6 +3,7 @@ package com.mobiledev.mindaguard.backend
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
@@ -22,7 +23,7 @@ sealed class EditProfileUiState {
 class EditProfileViewModel : ViewModel() {
 
     private val auth = FirebaseAuth.getInstance()
-    private val db = FirebaseFirestore.getInstance()
+    private val db = FirebaseFirestore.getInstance(FirebaseApp.getInstance(), "default")
     private val storage = FirebaseStorage.getInstance()
 
     private val _uiState = MutableStateFlow<EditProfileUiState>(EditProfileUiState.Idle)

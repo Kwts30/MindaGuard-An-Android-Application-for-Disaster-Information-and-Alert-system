@@ -1,5 +1,10 @@
 package com.mobiledev.mindaguard.ui
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.paint
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -29,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import com.mobiledev.mindaguard.R
 import com.mobiledev.mindaguard.backend.AlertFeedItem
 import com.mobiledev.mindaguard.theme.MindaGuardTheme
+import com.mobiledev.mindaguard.theme.*
 import com.mobiledev.mindaguard.ui.components.MapLibreMapView
 import com.mobiledev.mindaguard.ui.components.SATELLITE_STYLE_JSON
 import java.time.LocalTime
@@ -44,6 +52,9 @@ enum class MainDestination { HOME, MAP, MENU }
 fun MainPageScreen(
     currentTime: LocalTime = LocalTime.now(),
     alerts: List<AlertFeedItem> = emptyList(),
+    isRefreshing: Boolean = false,
+    listenerError: String? = null,
+    onRefresh: () -> Unit = {},
     onAlertClick: () -> Unit = {},
     onEmergencyClick: () -> Unit = {},
     onMapClick: () -> Unit = {}
@@ -59,18 +70,21 @@ fun MainPageScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F6FA))
+            .background(ScreenBackground)
             .statusBarsPadding()
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         HomeContent(
-            greetingText    = greetingText,
-            isAfternoon     = isAfternoon,
-            isNight         = isNight,
-            alerts          = alerts,
-            onAlertClick    = onAlertClick,
+            greetingText     = greetingText,
+            isAfternoon      = isAfternoon,
+            isNight          = isNight,
+            alerts           = alerts,
+            isRefreshing     = isRefreshing,
+            listenerError    = listenerError,
+            onRefresh        = onRefresh,
+            onAlertClick     = onAlertClick,
             onEmergencyClick = onEmergencyClick,
-            onMapClick      = onMapClick
+            onMapClick       = onMapClick
         )
     }
 }
@@ -84,10 +98,22 @@ private fun HomeContent(
     isAfternoon: Boolean,
     isNight: Boolean,
     alerts: List<AlertFeedItem>,
+    isRefreshing: Boolean,
+    listenerError: String?,
+    onRefresh: () -> Unit,
     onAlertClick: () -> Unit,
     onEmergencyClick: () -> Unit,
     onMapClick: () -> Unit
 ) {
+    // Spinning animation for the refresh icon
+    val infiniteTransition = rememberInfiniteTransition(label = "refresh_spin")
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue  = 360f,
+        animationSpec = infiniteRepeatable(tween(700, easing = LinearEasing)),
+        label = "spin"
+    )
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -110,12 +136,19 @@ private fun HomeContent(
             )
         }
 
-        // ── Mini map tile ─────────────────────────────────────────────────────
+        // Hazard Map label + mini map tile
         item {
+            Text(
+                text = "Hazard Map",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1A1A2E)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             MiniMapTile(onClick = onMapClick)
         }
 
-        // ── Community Alerts header ───────────────────────────────────────────
+        // Community Alerts header with refresh button
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -126,24 +159,96 @@ private fun HomeContent(
                     text = "COMMUNITY ALERTS",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1C1E21),
+                    color = DarkText,
                     letterSpacing = 0.5.sp
                 )
-                Icon(
-                    imageVector = Icons.Default.ChevronRight,
-                    contentDescription = null,
-                    tint = Color.Gray,
-                    modifier = Modifier.size(20.dp)
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    // Refresh icon button — spins while loading
+                    IconButton(
+                        onClick  = onRefresh,
+                        enabled  = !isRefreshing,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Refresh alerts",
+                            tint = if (isRefreshing) OrangeButton else Color.Gray,
+                            modifier = Modifier
+                                .size(18.dp)
+                                .then(if (isRefreshing) Modifier.rotate(rotation) else Modifier)
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = "Go to Alert Updates",
+                        tint = Color.Gray,
+                        modifier = Modifier
+                            .size(20.dp)
+                            .clickable(onClick = onAlertClick)
+                    )
+                }
             }
         }
 
-        // ── Alert cards ───────────────────────────────────────────────────────
-        items(alerts) { alert ->
-            CommunityAlertItem(alert = alert)
+        // Firestore error banner — shows when the listener fails
+        if (listenerError != null) {
+            item {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFFFEBEE)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "⚠ $listenerError",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFFB71C1C),
+                            modifier = Modifier.weight(1f)
+                        )
+                        TextButton(onClick = onRefresh) {
+                            Text("Retry", color = Color(0xFFB71C1C), fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
         }
 
-        if (alerts.isEmpty()) {
+        // Refreshing indicator row
+        if (isRefreshing) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = OrangeButton
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "Refreshing alerts…",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.Gray
+                    )
+                }
+            }
+        }
+
+        // Alert cards
+        items(alerts) { alert ->
+            CommunityAlertItem(alert = alert, onReadMoreClick = onAlertClick)
+        }
+
+        if (alerts.isEmpty() && !isRefreshing) {
             item {
                 Box(
                     modifier = Modifier
@@ -232,7 +337,7 @@ private fun AlertButtonsRow(onAlertClick: () -> Unit, onEmergencyClick: () -> Un
             modifier = Modifier.weight(1f).height(56.dp),
             onClick = onAlertClick,
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF7043))
+            colors = ButtonDefaults.buttonColors(containerColor = OrangeButton)
         ) {
             Icon(Icons.Default.Warning, contentDescription = null, tint = Color.White, modifier = Modifier.size(30.dp))
             Spacer(Modifier.width(8.dp))
@@ -242,7 +347,7 @@ private fun AlertButtonsRow(onAlertClick: () -> Unit, onEmergencyClick: () -> Un
             modifier = Modifier.weight(1f).height(56.dp),
             onClick = onEmergencyClick,
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF029BE5))
+            colors = ButtonDefaults.buttonColors(containerColor = EmergencyBlue)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -266,47 +371,19 @@ private fun MiniMapTile(onClick: () -> Unit) {
             .fillMaxWidth()
             .height(170.dp)
             .clip(RoundedCornerShape(20.dp))
-            .clickable(onClick = onClick)
     ) {
+        // Frozen map — no touch gestures, zoomed out to show Central Davao
         MapLibreMapView(
             modifier = Modifier.fillMaxSize(),
             layers = emptyList(),
             mapStyleJson = SATELLITE_STYLE_JSON,
             showEvacPins = false,
             showCritPins = false,
-            initialLat = 7.0644,
-            initialLng = 125.6079,
-            initialZoom = 13.0
+            frozen = true,
+            initialLat = 7.0700,
+            initialLng = 125.6120,
+            initialZoom = 11.5
         )
-
-        // "School / University" label chip — mimics the screenshot
-        Surface(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(8.dp),
-            shape = RoundedCornerShape(8.dp),
-            color = Color.White.copy(alpha = 0.90f),
-            shadowElevation = 2.dp
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = null,
-                    tint = Color(0xFF029BE5),
-                    modifier = Modifier.size(14.dp)
-                )
-                Text(
-                    text = "Davao City",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFF1C1E21),
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        }
 
         // Tap overlay hint at bottom
         Box(
@@ -324,13 +401,21 @@ private fun MiniMapTile(onClick: () -> Unit) {
                 fontWeight = FontWeight.Medium
             )
         }
+
+        // Transparent click-interceptor overlay — sits on top of AndroidView
+        // so taps are captured by Compose before MapLibre can consume them
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(onClick = onClick)
+        )
     }
 }
 
 // ── Community alert card ──────────────────────────────────────────────────────
 
 @Composable
-private fun CommunityAlertItem(alert: AlertFeedItem) {
+private fun CommunityAlertItem(alert: AlertFeedItem, onReadMoreClick: () -> Unit = {}) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -345,13 +430,13 @@ private fun CommunityAlertItem(alert: AlertFeedItem) {
             // Red warning icon
             Surface(
                 shape = CircleShape,
-                color = Color(0xFFFFEBEE),
+                color = LightRedBg,
                 modifier = Modifier.size(36.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Warning,
                     contentDescription = null,
-                    tint = Color(0xFFD32F2F),
+                    tint = RedWarning,
                     modifier = Modifier
                         .padding(8.dp)
                         .fillMaxSize()
@@ -365,7 +450,7 @@ private fun CommunityAlertItem(alert: AlertFeedItem) {
                     fontSize = 13.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    color = Color(0xFF1C1E21)
+                    color = DarkText
                 )
                 Text(
                     text = alert.description,
@@ -387,12 +472,24 @@ private fun CommunityAlertItem(alert: AlertFeedItem) {
                     )
                     Text(text = alert.timeLabel, fontSize = 11.sp, color = Color.Gray)
                     Spacer(Modifier.weight(1f))
-                    Text(
-                        text = "Read More",
-                        fontSize = 11.sp,
-                        color = Color(0xFF1565C0),
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Row(
+                        modifier = Modifier.clickable(onClick = onReadMoreClick),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Text(
+                            text = "Read More",
+                            fontSize = 11.sp,
+                            color = BlueLink,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = "Go to Alert Updates",
+                            tint = BlueLink,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
                 }
             }
 

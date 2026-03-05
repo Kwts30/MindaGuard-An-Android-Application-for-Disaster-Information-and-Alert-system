@@ -1,14 +1,20 @@
 package com.mobiledev.mindaguard.model
 
+import androidx.compose.ui.graphics.Color
 import java.time.LocalDateTime
 
 // ── Hazard type enum ─────────────────────────────────────────────────────────
-enum class HazardType {
-    FLOOD,
-    LANDSLIDE,
-    EARTHQUAKE,
-    STORM_SURGE,
-    TYPHOON
+enum class HazardType(
+    val label: String,
+    val emoji: String,
+    val badgeLabel: String,
+    val accentColor: Color
+) {
+    FLOOD("Flood", "🌊", "FLOOD", Color(0xFF1565C0)),
+    LANDSLIDE("Landslide", "⛰️", "LANDSLIDE", Color(0xFF6D4C41)),
+    EARTHQUAKE("Earthquake", "🌍", "EARTHQUAKE", Color(0xFF546E7A)),
+    STORM_SURGE("Storm Surge", "🌀", "STORM SURGE", Color(0xFF00838F)),
+    TYPHOON("Typhoon", "🌪️", "TYPHOON", Color(0xFF6A1B9A))
 }
 
 // ── Core data class ──────────────────────────────────────────────────────────

@@ -17,8 +17,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.*import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -29,6 +28,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mobiledev.mindaguard.model.HazardType
 import com.mobiledev.mindaguard.theme.MindaGuardTheme
+import com.mobiledev.mindaguard.theme.*
+import com.mobiledev.mindaguard.ui.components.LocationPickerDialog
+import com.mobiledev.mindaguard.ui.components.PickedLocation
 
 // ── Submitted report data class ───────────────────────────────────────────────
 
@@ -46,7 +48,10 @@ data class CommunityReport(
 @Composable
 fun CreateAlertScreen(
     onSubmit: (CommunityReport) -> Unit = {},
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    isSubmitting: Boolean = false,
+    submitError: String? = null,
+    onClearError: () -> Unit = {}
 ) {
     var title by remember { mutableStateOf("") }
     var selectedHazard by remember { mutableStateOf<HazardType?>(null) }
@@ -62,13 +67,14 @@ fun CreateAlertScreen(
     var hazardError by remember { mutableStateOf(false) }
     var descError by remember { mutableStateOf(false) }
     var locationError by remember { mutableStateOf(false) }
+    var showLocationPicker by remember { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F6FA))
+            .background(ScreenBackground)
     ) {
         // ── Top bar ───────────────────────────────────────────────────────────
         Row(
@@ -132,61 +138,14 @@ fun CreateAlertScreen(
             // ── Section: Location Pin ─────────────────────────────────────────
             SectionCard {
                 SectionLabel(text = "Pin Location", required = true)
-                if (locationError) ErrorText("Please pin a location")
+                if (locationError) ErrorText("Please pin a location on the map")
 
-                // Mock map tile
-                MockMapTile(
-                    pinDropped = pinDropped,
-                    onGpsGrab = {
-                        // Simulate GPS grab with Davao City center coords
-                        mockLat = 7.0644 + (Math.random() * 0.01 - 0.005)
-                        mockLng = 125.6078 + (Math.random() * 0.01 - 0.005)
-                        locationLabel = "%.4f, %.4f (GPS)".format(mockLat, mockLng)
-                        pinDropped = true
-                        locationError = false
-                    },
-                    onMapTap = {
-                        mockLat = 7.0644 + (Math.random() * 0.02 - 0.01)
-                        mockLng = 125.6078 + (Math.random() * 0.02 - 0.01)
-                        locationLabel = "%.4f, %.4f (Pinned)".format(mockLat, mockLng)
-                        pinDropped = true
-                        locationError = false
-                    }
-                )
-
-                if (pinDropped) {
-                    Spacer(Modifier.height(8.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = null,
-                            tint = Color(0xFF1565C0),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Text(
-                            text = locationLabel,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = Color(0xFF1565C0)
-                        )
-                    }
-                }
-
-                // Optional human-readable location name
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = if (locationLabel.contains("GPS") || locationLabel.contains("Pinned")) "" else locationLabel,
-                    onValueChange = { locationLabel = it },
-                    placeholder = { Text("Describe location (e.g. Near SM Lanang)", color = Color(0xFFAAAAAA)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true,
-                    colors = outlinedFieldColors(),
-                    leadingIcon = {
-                        Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color.Gray)
-                    }
+                LocationThumbnail(
+                    pinDropped   = pinDropped,
+                    lat          = mockLat,
+                    lng          = mockLng,
+                    locationLabel= locationLabel,
+                    onTap        = { showLocationPicker = true }
                 )
             }
 
@@ -247,51 +206,90 @@ fun CreateAlertScreen(
             // ── Submit button ─────────────────────────────────────────────────
             Button(
                 onClick = {
-                    titleError = title.isBlank()
-                    hazardError = selectedHazard == null
-                    descError = description.isBlank()
+                    titleError    = title.isBlank()
+                    hazardError   = selectedHazard == null
+                    descError     = description.isBlank()
                     locationError = !pinDropped && locationLabel.isBlank()
 
                     if (!titleError && !hazardError && !descError && !locationError) {
                         showSuccess = true
                         onSubmit(
                             CommunityReport(
-                                title = title.trim(),
-                                hazardType = selectedHazard!!,
-                                description = description.trim(),
+                                title         = title.trim(),
+                                hazardType    = selectedHazard!!,
+                                description   = description.trim(),
                                 locationLabel = locationLabel.trim(),
-                                latitude = mockLat,
-                                longitude = mockLng
+                                latitude      = mockLat,
+                                longitude     = mockLng
                             )
                         )
                     }
                 },
+                enabled = !isSubmitting,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFF7043)
+                    containerColor = OrangeButton,
+                    disabledContainerColor = OrangeButton.copy(alpha = 0.6f)
                 ),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = "Submit Alert",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
+                if (isSubmitting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Submitting…", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                } else {
+                    Icon(Icons.Default.Warning, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Submit Alert", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
+            }
+
+            // ── Firebase submit error ──────────────────────────────────────────
+            if (submitError != null) {
+                LaunchedEffect(submitError) {
+                    kotlinx.coroutines.delay(4000)
+                    onClearError()
+                }
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFB71C1C).copy(alpha = 0.1f)
+                ) {
+                    Text(
+                        text = "⚠ $submitError",
+                        modifier = Modifier.padding(12.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFFB71C1C)
+                    )
+                }
             }
 
             Spacer(Modifier.height(100.dp))
         }
+    }
+
+    // ── Full-screen location picker ───────────────────────────────────────────
+    if (showLocationPicker) {
+        LocationPickerDialog(
+            initialLat = mockLat,
+            initialLng = mockLng,
+            onDismiss  = { showLocationPicker = false },
+            onConfirm  = { picked: PickedLocation ->
+                mockLat       = picked.latitude
+                mockLng       = picked.longitude
+                locationLabel = picked.label
+                pinDropped    = true
+                locationError = false
+                showLocationPicker = false
+            }
+        )
     }
 
     // ── Success snackbar / toast overlay ─────────────────────────────────────
@@ -324,110 +322,98 @@ fun CreateAlertScreen(
     }
 }
 
-// ── Real Map Tile ─────────────────────────────────────────────────────────────
+// ── Location thumbnail (tap → opens full-screen picker) ──────────────────────
 
 @Composable
-private fun MockMapTile(
+private fun LocationThumbnail(
     pinDropped: Boolean,
-    onGpsGrab: () -> Unit,
-    onMapTap: () -> Unit
+    lat: Double,
+    lng: Double,
+    locationLabel: String,
+    onTap: () -> Unit
 ) {
     val borderColor by animateColorAsState(
-        targetValue = if (pinDropped) Color(0xFF1565C0) else Color(0xFFDDDDDD),
+        targetValue = if (pinDropped) BlueLink else Color(0xFFDDDDDD),
         animationSpec = tween(300),
         label = "border"
     )
 
+    // Thumbnail map preview
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp)
+            .height(170.dp)
             .clip(RoundedCornerShape(16.dp))
             .border(2.dp, borderColor, RoundedCornerShape(16.dp))
-            .clickable { onMapTap() }
     ) {
-        // Real MapLibre satellite map
         com.mobiledev.mindaguard.ui.components.MapLibreMapView(
-            modifier = Modifier.fillMaxSize(),
-            layers = emptyList(),
-            mapStyleJson = com.mobiledev.mindaguard.ui.components.SATELLITE_STYLE_JSON,
+            modifier  = Modifier.fillMaxSize(),
+            layers    = emptyList(),
+            mapStyleJson = com.mobiledev.mindaguard.ui.components.CLASSIC_STYLE_JSON,
             showEvacPins = false,
             showCritPins = false,
-            initialLat = 7.0644,
-            initialLng = 125.6079,
-            initialZoom = 14.0
+            frozen    = true,
+            initialLat = lat,
+            initialLng = lng,
+            initialZoom = 15.5
         )
 
-        // Pin icon overlay in centre
-        val pinSize by animateDpAsState(
-            targetValue = if (pinDropped) 40.dp else 32.dp,
-            animationSpec = tween(300),
-            label = "pin"
-        )
+        // Center pin
         Icon(
             imageVector = Icons.Default.LocationOn,
-            contentDescription = "Pin location",
-            tint = if (pinDropped) Color(0xFFD32F2F) else Color(0xFF888888),
+            contentDescription = null,
+            tint = if (pinDropped) OrangeButton else Color(0xFF888888),
             modifier = Modifier
                 .align(Alignment.Center)
-                .size(pinSize)
+                .size(if (pinDropped) 40.dp else 32.dp)
+                .offset(y = (-16).dp)
         )
 
-        // "Tap to pin" hint when nothing pinned
-        if (!pinDropped) {
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 10.dp),
-                shape = RoundedCornerShape(20.dp),
-                color = Color.Black.copy(alpha = 0.55f)
-            ) {
-                Text(
-                    text = "Tap map to drop pin",
-                    color = Color.White,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelSmall
-                )
-            }
+        // "Tap to pick location" / "Tap to change" hint at bottom
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .background(Color.Black.copy(alpha = 0.45f))
+                .padding(vertical = 6.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = if (pinDropped) "📍 Tap to change location" else "Tap to pick location on map",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White,
+                fontWeight = FontWeight.Medium
+            )
         }
 
-        // Pinned confirmation chip
-        if (pinDropped) {
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(8.dp),
-                shape = RoundedCornerShape(8.dp),
-                color = Color(0xFF1565C0).copy(alpha = 0.90f)
-            ) {
-                Text(
-                    text = "📍 Location pinned",
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.White
-                )
-            }
-        }
+        // Transparent clickable overlay on top
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(onClick = onTap)
+        )
     }
 
-    Spacer(Modifier.height(8.dp))
-
-    // GPS grab button
-    OutlinedButton(
-        onClick = onGpsGrab,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFF1565C0)),
-        colors = ButtonColors(
-            containerColor = Color.White,
-            contentColor = Color(0xFF1565C0),
-            disabledContainerColor = Color.LightGray,
-            disabledContentColor = Color.Gray
-        )
-    ) {
-        Icon(imageVector = Icons.Default.MyLocation, contentDescription = null, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(8.dp))
-        Text("Grab Current GPS Location", fontWeight = FontWeight.Medium)
+    // Show confirmed coordinates below thumbnail
+    if (pinDropped) {
+        Spacer(Modifier.height(8.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.LocationOn,
+                contentDescription = null,
+                tint = BlueLink,
+                modifier = Modifier.size(14.dp)
+            )
+            Text(
+                text = locationLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = BlueLink,
+                maxLines = 1
+            )
+        }
     }
 }
 
@@ -490,34 +476,6 @@ private fun HazardTypeSelector(
     }
 }
 
-// ── Extensions on HazardType ──────────────────────────────────────────────────
-
-private val HazardType.accentColor: Color
-    get() = when (this) {
-        HazardType.FLOOD       -> Color(0xFF1565C0)
-        HazardType.LANDSLIDE   -> Color(0xFF6D4C41)
-        HazardType.EARTHQUAKE  -> Color(0xFF546E7A)
-        HazardType.STORM_SURGE -> Color(0xFF00838F)
-        HazardType.TYPHOON     -> Color(0xFF6A1B9A)
-    }
-
-private val HazardType.label: String
-    get() = when (this) {
-        HazardType.FLOOD       -> "Flood"
-        HazardType.LANDSLIDE   -> "Landslide"
-        HazardType.EARTHQUAKE  -> "Earthquake"
-        HazardType.STORM_SURGE -> "Storm Surge"
-        HazardType.TYPHOON     -> "Typhoon"
-    }
-
-private val HazardType.emoji: String
-    get() = when (this) {
-        HazardType.FLOOD       -> "🌊"
-        HazardType.LANDSLIDE   -> "⛰️"
-        HazardType.EARTHQUAKE  -> "🌍"
-        HazardType.STORM_SURGE -> "🌀"
-        HazardType.TYPHOON     -> "🌪️"
-    }
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -544,10 +502,10 @@ private fun SectionLabel(text: String, required: Boolean = false) {
             text = text,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF1C1E21)
+            color = DarkText
         )
         if (required) {
-            Text(" *", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
+            Text(" *", color = RedWarning, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -557,15 +515,15 @@ private fun ErrorText(message: String) {
     Text(
         text = message,
         style = MaterialTheme.typography.labelSmall,
-        color = Color(0xFFD32F2F)
+        color = RedWarning
     )
 }
 
 @Composable
 private fun outlinedFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = Color(0xFF1565C0),
-    unfocusedBorderColor = Color(0xFFDDDDDD),
-    errorBorderColor = Color(0xFFD32F2F),
+    focusedBorderColor = BlueLink,
+    unfocusedBorderColor = BorderGray,
+    errorBorderColor = RedWarning,
     focusedContainerColor = Color.White,
     unfocusedContainerColor = Color.White
 )

@@ -18,21 +18,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mobiledev.mindaguard.theme.MindaGuardTheme
-
-data class EmergencyContact(
-    val agency: String,
-    val number: String,
-    val description: String
-)
+import com.mobiledev.mindaguard.theme.ScreenBackground
+import com.mobiledev.mindaguard.data.EmergencyContact
+import com.mobiledev.mindaguard.data.defaultEmergencyContacts
 
 @Composable
 fun EmergencyScreen(
-    contacts: List<EmergencyContact> = sampleContacts
+    contacts: List<EmergencyContact> = defaultEmergencyContacts
 ) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F6FA))
+            .background(ScreenBackground)
             .statusBarsPadding()
             .padding(16.dp)
     ) {
@@ -87,23 +84,6 @@ private fun EmergencyCard(contact: EmergencyContact) {
     }
 }
 
-private val sampleContacts = listOf(
-    EmergencyContact(
-        agency = "Local DRRMO",
-        number = "123-4567",
-        description = "Disaster response and rescue"
-    ),
-    EmergencyContact(
-        agency = "Fire Department",
-        number = "160",
-        description = "Fire and rescue emergencies"
-    ),
-    EmergencyContact(
-        agency = "Police",
-        number = "166",
-        description = "Police assistance"
-    )
-)
 
 @Preview(showBackground = true)
 @Composable

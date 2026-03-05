@@ -1,6 +1,7 @@
 package com.mobiledev.mindaguard.backend
 
 import androidx.lifecycle.ViewModel
+import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -28,7 +29,7 @@ sealed class ProfileUiState {
 class UserProfileViewModel : ViewModel() {
 
     private val auth = FirebaseAuth.getInstance()
-    private val db = FirebaseFirestore.getInstance()
+    private val db = FirebaseFirestore.getInstance(FirebaseApp.getInstance(), "default")
 
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
     val uiState: StateFlow<ProfileUiState> = _uiState

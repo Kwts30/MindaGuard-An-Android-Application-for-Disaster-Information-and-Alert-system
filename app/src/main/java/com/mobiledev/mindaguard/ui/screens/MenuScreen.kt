@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mobiledev.mindaguard.R
+import com.mobiledev.mindaguard.theme.*
 import com.mobiledev.mindaguard.ui.menu.MenuActionCallbacks
 
 /**
@@ -60,6 +61,7 @@ import com.mobiledev.mindaguard.ui.menu.MenuActionCallbacks
 fun MenuScreen(
     userName: String = "User Name",
     versionName: String = "Version 0.1-BETA",
+    isAdmin: Boolean = false,
     actions: MenuActionCallbacks = MenuActionCallbacks()
 ) {
     // Full-screen background image (no padding here so it reaches the very bottom)
@@ -94,7 +96,7 @@ fun MenuScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F0F0).copy(alpha = 0.95f)),
+                colors = CardDefaults.cardColors(containerColor = MenuCardBg.copy(alpha = 0.95f)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                 onClick = { actions.onUserProfileClick() }
             ) {
@@ -126,7 +128,7 @@ fun MenuScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F0F0).copy(alpha = 0.95f)),
+                colors = CardDefaults.cardColors(containerColor = MenuCardBg.copy(alpha = 0.95f)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                 onClick = { actions.onMyReportsClick() }
             ) {
@@ -136,9 +138,9 @@ fun MenuScreen(
                         .padding(horizontal = 16.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Surface(modifier = Modifier.size(40.dp), shape = CircleShape, color = Color(0xFFFFEBEE)) {
+                    Surface(modifier = Modifier.size(40.dp), shape = CircleShape, color = LightRedBg) {
                         Box(contentAlignment = Alignment.Center) {
-                            Icon(imageVector = Icons.Filled.Warning, contentDescription = "My Reports", tint = Color(0xFFD32F2F))
+                            Icon(imageVector = Icons.Filled.Warning, contentDescription = "My Reports", tint = RedWarning)
                         }
                     }
                     Spacer(modifier = Modifier.width(12.dp))
@@ -149,11 +151,65 @@ fun MenuScreen(
                 }
             }
 
+            // Admin Panel — only visible to admin users
+            if (isAdmin) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9).copy(alpha = 0.95f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                    onClick = { actions.onAdminPanelClick() }
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(modifier = Modifier.size(40.dp), shape = CircleShape, color = Color(0xFF2E7D32).copy(alpha = 0.15f)) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Filled.Warning,
+                                    contentDescription = "Admin Panel",
+                                    tint = Color(0xFF2E7D32)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Admin Panel",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF1B5E20)
+                            )
+                            Text(
+                                text = "Verify & moderate community reports",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFF388E3C)
+                            )
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFF2E7D32)
+                        ) {
+                            Text(
+                                text = "ADMIN",
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+
             // Settings / info block
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F0F0).copy(alpha = 0.95f)),
+                colors = CardDefaults.cardColors(containerColor = MenuCardBg.copy(alpha = 0.95f)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
@@ -165,6 +221,9 @@ fun MenuScreen(
                     DividerLine()
                     MenuRow(icon = Icons.Filled.Info, iconTint = Color.Black,
                         title = "App Info", onClick = { actions.onAppInfoClick() })
+                    DividerLine()
+                    MenuRow(icon = Icons.Filled.Warning, iconTint = Color(0xFFD32F2F),
+                        title = "Earthquake Alert", onClick = { actions.onEarthquakeAlertClick() })
                 }
             }
 
@@ -173,7 +232,7 @@ fun MenuScreen(
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 onClick = { actions.onLogoutClick() },
                 shape = RoundedCornerShape(26.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF7043), contentColor = Color.White)
+                colors = ButtonDefaults.buttonColors(containerColor = OrangeButton, contentColor = Color.White)
             ) {
                 Icon(imageVector = Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Log Out", tint = Color.White)
                 Spacer(modifier = Modifier.width(8.dp))

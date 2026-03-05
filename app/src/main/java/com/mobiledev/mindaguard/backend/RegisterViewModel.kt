@@ -2,6 +2,7 @@ package com.mobiledev.mindaguard.backend
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
@@ -79,7 +80,7 @@ class RegisterViewModel(
                         ).await()
                     } catch (_: Exception) {}
                     try {
-                        FirebaseFirestore.getInstance()
+                        FirebaseFirestore.getInstance(FirebaseApp.getInstance(), "default")
                             .collection("users").document(uid)
                             .set(mapOf(
                                 "firstName" to firstName.trim(),
@@ -99,14 +100,8 @@ class RegisterViewModel(
                 _uiState.value = RegisterUiState.Error("Password is too weak. Use at least 6 characters.")
             } catch (e: Exception) {
                 val msg = e.message ?: ""
-                val isNetwork = msg.contains("network", ignoreCase = true) ||
-                        msg.contains("timeout", ignoreCase = true) ||
-                        msg.contains("timed out", ignoreCase = true) ||
-                        msg.contains("connect", ignoreCase = true) ||
-                        msg.contains("resolve", ignoreCase = true) ||
-                        msg.contains("socket", ignoreCase = true)
                 _uiState.value = RegisterUiState.Error(
-                    if (isNetwork) "Poor connection. Tap to try again."
+                    if (isNetworkError(msg)) "Poor connection. Tap to try again."
                     else msg.ifBlank { "Registration failed. Please try again." }
                 )
             }
