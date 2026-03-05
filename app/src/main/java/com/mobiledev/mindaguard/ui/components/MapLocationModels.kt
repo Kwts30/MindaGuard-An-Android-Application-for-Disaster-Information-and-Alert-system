@@ -1,5 +1,4 @@
-package com.mobiledev.mindaguard.ui.components
-
+﻿package com.mobiledev.mindaguard.ui.components
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,8 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-
-// ── Shared model ─────────────────────────────────────────────────────────────
+// Shared model
 data class MapLocation(
     val id: String,
     val name: String,
@@ -27,118 +25,115 @@ data class MapLocation(
     val lng: Double,
     val distanceText: String = ""
 )
-
-// ── Evacuation Centers — Davao City (schools, gyms, covered courts) ──────────
+// Evacuation Centers - Davao City (schools & covered courts)
 val EvacCenters: List<MapLocation> = listOf(
-    // District 1 – Poblacion / Agdao / Buhangin
-    MapLocation("evac_001","Davao City National High School","R. Magsaysay Ave., Poblacion, Davao City",7.0643,125.6075),
-    MapLocation("evac_002","San Pedro College Gym","Assumption Rd., Davao City",7.0652,125.6102),
-    MapLocation("evac_003","Agdao Elementary School","F. Torres St., Agdao, Davao City",7.0808,125.6148),
-    MapLocation("evac_004","Agdao Covered Court","Agdao, Davao City",7.0801,125.6141),
-    MapLocation("evac_005","Buhangin Elementary School","Buhangin, Davao City",7.1023,125.6320),
-    MapLocation("evac_006","Buhangin National High School","Buhangin, Davao City",7.1030,125.6335),
-    MapLocation("evac_007","Panacan Elementary School","Panacan, Davao City",7.1194,125.6423),
-    MapLocation("evac_008","Sasa Elementary School","Sasa, Davao City",7.1050,125.6400),
-    MapLocation("evac_009","Bunawan Covered Court","Bunawan, Davao City",7.0927,125.5895),
-    MapLocation("evac_010","Bunawan Elementary School","Bunawan, Davao City",7.0935,125.5905),
-    // District 2 – Calinan / Tugbok / Matina
-    MapLocation("evac_011","Calinan National High School","Calinan, Davao City",7.1843,125.3953),
-    MapLocation("evac_012","Calinan Elementary School","Calinan, Davao City",7.1838,125.3940),
-    MapLocation("evac_013","Tugbok Elementary School","Tugbok, Davao City",7.1202,125.5400),
-    MapLocation("evac_014","Matina Elementary School","Matina, Davao City",7.0510,125.5850),
-    MapLocation("evac_015","Matina National High School Gym","Matina, Davao City",7.0502,125.5862),
-    MapLocation("evac_016","Mintal Elementary School","Mintal, Davao City",7.1455,125.4652),
-    MapLocation("evac_017","Catalunan Grande Covered Court","Catalunan Grande, Davao City",7.0350,125.5530),
-    MapLocation("evac_018","Catalunan Pequeño Gym","Catalunan Pequeño, Davao City",7.0365,125.5512),
-    MapLocation("evac_019","New Valencia Covered Court","New Valencia, Davao City",7.1120,125.5100),
-    MapLocation("evac_020","Indangan Elem School","Indangan, Davao City",7.1260,125.6000),
-    // District 3 – Talomo / Toril / Baguio
-    MapLocation("evac_021","Talomo Elementary School","Talomo, Davao City",7.0720,125.6010),
-    MapLocation("evac_022","Ma-a Elementary School","Barangay Ma-a, Talomo, Davao City",7.0713,125.6075),
-    MapLocation("evac_023","Ma-a Covered Court","Barangay Ma-a, Talomo, Davao City",7.0721,125.6090),
-    MapLocation("evac_024","Toril National High School","Toril, Davao City",6.9973,125.5250),
-    MapLocation("evac_025","Toril Elementary School Gym","Toril, Davao City",6.9965,125.5238),
-    MapLocation("evac_026","Binugao Covered Court","Binugao, Davao City",7.0020,125.5190),
-    MapLocation("evac_027","Baliok Elementary School","Baliok, Davao City",7.0050,125.5350),
-    MapLocation("evac_028","Eden Elementary School","Eden, Davao City",7.1820,125.4552),
-    MapLocation("evac_029","Sirawan Covered Court","Sirawan, Davao City",6.9852,125.5650),
-    MapLocation("evac_030","Ula Elementary School","Ula, Davao City",7.0200,125.4800),
-    // District 4 – Poblacion (city center) / Lanang / Maa / Matina
-    MapLocation("evac_031","Davao City Recreation Center","CM Recto St., Davao City",7.0638,125.6042),
-    MapLocation("evac_032","San Beda College Gym (PhilSports Annex)","Lanang, Davao City",7.0895,125.6280),
-    MapLocation("evac_033","UM Gym","Bolton St., Davao City",7.0620,125.6030),
-    MapLocation("evac_034","Davao del Sur Capitol Grounds","Bonifacio St., Davao City",7.0660,125.6093),
-    MapLocation("evac_035","Maa Elementary School","Maa, Davao City",7.0480,125.5975),
-    MapLocation("evac_036","Maa Covered Court","Maa, Davao City",7.0490,125.5982),
-    MapLocation("evac_037","Bangkas Heights Covered Court","Bangkas Heights, Davao City",7.0420,125.5840),
-    MapLocation("evac_038","Bucana Elementary School","Bucana, Davao City",7.0730,125.6230),
-    MapLocation("evac_039","Dumoy Elementary School","Dumoy, Davao City",7.0562,125.5760),
-    MapLocation("evac_040","Diversion Road Covered Court","Maa-Diversion, Davao City",7.0555,125.6050),
-    // Poblacion barangays
-    MapLocation("evac_041","Barangay 1 Multipurpose Hall","Poblacion, Davao City",7.0645,125.6062),
-    MapLocation("evac_042","Barangay 23 Covered Court","Poblacion, Davao City",7.0630,125.6080),
-    MapLocation("evac_043","Leon Garcia Elementary School","Leon Garcia, Davao City",7.0810,125.6180),
-    MapLocation("evac_044","Pampanga Covered Court","Pampanga, Davao City",7.0730,125.5905),
-    MapLocation("evac_045","Lapu-Lapu Covered Court","Lapu-Lapu, Davao City",7.0905,125.6060),
-    MapLocation("evac_046","Uyanguren Gym","Uyanguren, Davao City",7.0670,125.6130),
-    MapLocation("evac_047","Lacson Elementary School","Lacson, Davao City",7.0985,125.6050),
-    MapLocation("evac_048","Tibungco Elementary School","Tibungco, Davao City",7.1170,125.6350),
-    MapLocation("evac_049","Communal Elementary School","Communal, Davao City",7.1070,125.6290),
-    MapLocation("evac_050","Waan Covered Court","Waan, Davao City",7.1012,125.5780)
+    // Elementary Schools
+    MapLocation("evac_es_01", "Magallanes Elementary School", "Poblacion, Davao City", 7.0637216, 125.6074066),
+    MapLocation("evac_es_02", "Sta. Ana Central Elementary School", "Poblacion, Davao City", 7.0735888, 125.6192896),
+    MapLocation("evac_es_03", "Kapitan Tomas Monteverde Sr. Central ES", "Poblacion, Davao City", 7.0706711, 125.6099366),
+    MapLocation("evac_es_04", "Teodoro L. Palma Gil Elementary School", "Poblacion, Davao City", 7.0724260, 125.6085960),
+    MapLocation("evac_es_05", "Manuel A. Roxas Elementary School", "Poblacion, Davao City", 7.0714694, 125.6190345),
+    MapLocation("evac_es_06", "Jose P. Rizal Elementary School", "Poblacion, Davao City", 7.0723033, 125.6188926),
+    MapLocation("evac_es_07", "Manuel L. Quezon Elementary School", "Poblacion, Davao City", 7.0713131, 125.6190456),
+    MapLocation("evac_es_08", "Wireless Elementary School", "Poblacion, Brgy 6-A, Davao City", 7.0724657, 125.6010876),
+    MapLocation("evac_es_09", "Jose L. Porras Elementary School", "Agdao, Davao City", 7.0907194, 125.6259900),
+    MapLocation("evac_es_10", "SIR Elementary School", "Bucana, Matina, Davao City", 7.0598871, 125.6025453),
+    MapLocation("evac_es_11", "Calinan Central Elementary School", "Calinan District, Davao City", 7.1867157, 125.4547597),
+    MapLocation("evac_es_12", "Lacson Elementary School", "Calinan District, Davao City", 7.2111330, 125.4427520),
+    MapLocation("evac_es_13", "Lorenzo Elementary School", "Calinan District, Davao City", 7.2072980, 125.4914030),
+    MapLocation("evac_es_14", "Pangyan Elementary School", "Calinan District, Davao City", 7.2062129, 125.5028042),
+    // High Schools
+    MapLocation("evac_hs_01", "Davao City National High School (Main)", "Poblacion, Davao City", 7.0790428, 125.6063331),
+    MapLocation("evac_hs_02", "Davao City National HS - Madapo Campus", "Poblacion, Davao City", 7.0762756, 125.5956684),
+    MapLocation("evac_hs_03", "Davao City Special National High School", "Km.7 Bangkal, Talomo, Davao City", 7.0616205, 125.5604084),
+    MapLocation("evac_hs_04", "Sta. Ana National HS (Main Campus)", "Poblacion, Davao City", 7.0722449, 125.6196757),
+    MapLocation("evac_hs_05", "Sta. Ana National HS (Annex)", "Poblacion, Davao City", 7.0721201, 125.6168917),
+    MapLocation("evac_hs_06", "Carlos P. Garcia Senior High School", "Poblacion, Davao City", 7.0726247, 125.6201468),
+    MapLocation("evac_hs_07", "Davao Christian High School - V. Mapa", "Poblacion, Davao City", 7.0794606, 125.6107688),
+    MapLocation("evac_hs_08", "Davao Chong Hua High School", "Poblacion, Davao City", 7.0770102, 125.6136917),
+    MapLocation("evac_hs_09", "Maa National High School", "Talomo District, Davao City", 7.0898670, 125.5784484),
+    MapLocation("evac_hs_10", "Don Enrique Bustamante National HS", "Talomo District, Davao City", 7.0887412, 125.6179329),
+    MapLocation("evac_hs_11", "Vicenta C. Nograles National High School", "Bucana, Matina, Davao City", 7.0602798, 125.6028256),
+    MapLocation("evac_hs_12", "Ateneo de Davao Senior High School", "McArthur Hwy, Talomo, Davao City", 7.0599333, 125.5568749),
+    MapLocation("evac_hs_13", "Cabantian National High School", "Buhangin District, Davao City", 7.1295902, 125.6211056),
+    MapLocation("evac_hs_14", "Waan National High School", "Buhangin District, Davao City", 7.1326694, 125.5763856),
+    MapLocation("evac_hs_15", "Calinan National High School", "Calinan District, Davao City", 7.1847030, 125.4566270),
+    MapLocation("evac_hs_16", "Subasta National High School", "Calinan District, Davao City", 7.1480345, 125.4378917),
+    // Covered Courts
+    MapLocation("evac_cc_01", "Barangay 7-A Covered Court", "Poblacion, Brgy 7-A, Davao City", 7.0732786, 125.6038399),
+    MapLocation("evac_cc_02", "Barangay 21-C Covered Basketball Court", "Poblacion, Brgy 21-C, Davao City", 7.0671582, 125.6193766),
+    MapLocation("evac_cc_03", "Barangay 23 Covered Court", "Poblacion, Brgy 23, Davao City", 7.0716353, 125.6220853),
+    MapLocation("evac_cc_04", "Barangay 5-A Covered Court", "Datu Bago, Brgy 5-A, Davao City", 7.0700110, 125.5989684),
+    MapLocation("evac_cc_05", "Barangay 40-D Covered Basketball Court", "Talomo, Brgy 40-D, Davao City", 7.0587090, 125.6100355),
+    MapLocation("evac_cc_06", "Bangkaan Brgy 1 Covered Court", "Talomo, Brgy 1, Davao City", 7.0639650, 125.6036535),
+    MapLocation("evac_cc_07", "Gravahan Covered Court", "Talomo District, Davao City", 7.0655239, 125.5989217),
+    MapLocation("evac_cc_08", "Talomo Cemento Covered Court", "Talomo District, Davao City", 7.0466196, 125.5521715),
+    MapLocation("evac_cc_09", "IWHA Village Covered Court", "Talomo District, Davao City", 7.0366694, 125.5094748),
+    MapLocation("evac_cc_10", "Ecoland Subd. Phase 1 Covered Court", "Matina, Ecoland, Davao City", 7.0511483, 125.5946845),
+    MapLocation("evac_cc_11", "Davao Executive Homes Covered Court", "Talomo District, Davao City", 7.0542145, 125.5802760),
+    MapLocation("evac_cc_12", "Dusnai Covered Court", "Talomo / Toril Area, Davao City", 7.0346338, 125.5251230),
+    MapLocation("evac_cc_13", "Crossing Bayabas Covered Court", "Toril District, Davao City", 7.0231956, 125.4951283),
+    MapLocation("evac_cc_14", "Barangay Duterte Covered Court", "Gov. Vicente Duterte, Davao City", 7.0895535, 125.6276735),
+    MapLocation("evac_cc_15", "Cory Village Covered Court", "Agdao / Buhangin, Davao City", 7.0923341, 125.6178833),
+    MapLocation("evac_cc_16", "San Antonio Covered Court", "Agdao District, Davao City", 7.0922023, 125.6297155),
+    MapLocation("evac_cc_17", "NHA Covered Court", "Bajada District, Davao City", 7.1134632, 125.6248852),
+    MapLocation("evac_cc_18", "Covered Court Km.8, Brgy. Tigatto", "Buhangin District, Davao City", 7.1205627, 125.5986813),
+    MapLocation("evac_cc_19", "Covered Court Uyanguren, Brgy. Tigatto", "Buhangin District, Davao City", 7.1141373, 125.5907654)
 )
-
-// ── Critical Facilities — hospitals & barangay health centers ────────────────
-val CriticalFacilities: List<MapLocation> = listOf(
-    // Major Hospitals
-    MapLocation("crit_001","Southern Philippines Medical Center (SPMC)","JP Laurel Ave., Bajada, Davao City",7.0726,125.6144),
-    MapLocation("crit_002","Davao Medical School Foundation Hospital","Airport Rd., Bajada, Davao City",7.0745,125.6160),
-    MapLocation("crit_003","San Pedro Hospital","Pichon St., Davao City",7.0655,125.6038),
-    MapLocation("crit_004","Davao Doctors Hospital","E. Quirino Ave., Davao City",7.0648,125.6052),
-    MapLocation("crit_005","Brokenshire College Hospital","Madapo Hills, Davao City",7.0755,125.6055),
-    MapLocation("crit_006","Manuel J. Santos Hospital (MJSH)","CM Recto St., Davao City",7.0622,125.6035),
-    MapLocation("crit_007","Davao Regional Medical Center (Apoapoaan)","Apoaporaan, Davao City",7.0780,125.5940),
-    MapLocation("crit_008","DavaoCare Hospital and Medical Center","MacArthur Hwy., Matina, Davao City",7.0520,125.5870),
-    MapLocation("crit_009","Clinica Hilario","Ilustre St., Davao City",7.0663,125.6072),
-    MapLocation("crit_010","The Medical City Davao","J.P. Laurel Ave., Bajada, Davao City",7.0720,125.6150),
-    // District Health / City Health Centers
-    MapLocation("crit_011","Davao City Health Office – Main","Quirino Ave., Davao City",7.0640,125.6048),
-    MapLocation("crit_012","Agdao Health Center","Agdao, Davao City",7.0812,125.6152),
-    MapLocation("crit_013","Buhangin Health Center","Buhangin, Davao City",7.1020,125.6325),
-    MapLocation("crit_014","Bunawan Health Center","Bunawan, Davao City",7.0930,125.5900),
-    MapLocation("crit_015","Panacan Health Center","Panacan, Davao City",7.1188,125.6418),
-    MapLocation("crit_016","Sasa Health Center","Sasa, Davao City",7.1048,125.6395),
-    MapLocation("crit_017","Talomo Health Center","Talomo, Davao City",7.0715,125.6020),
-    MapLocation("crit_018","Ma-a Barangay Health Center","Barangay Ma-a, Talomo, Davao City",7.0718,125.6068),
-    MapLocation("crit_019","Matina Health Center","Matina, Davao City",7.0505,125.5855),
-    MapLocation("crit_020","Toril Health Center","Toril, Davao City",6.9968,125.5242),
-    MapLocation("crit_021","Calinan Health Center","Calinan, Davao City",7.1840,125.3948),
-    MapLocation("crit_022","Tugbok Health Center","Tugbok, Davao City",7.1205,125.5395),
-    MapLocation("crit_023","Mintal Health Center","Mintal, Davao City",7.1452,125.4648),
-    MapLocation("crit_024","Catalunan Grande Health Center","Catalunan Grande, Davao City",7.0355,125.5535),
-    MapLocation("crit_025","Maa Health Center","Maa, Davao City",7.0482,125.5978),
-    MapLocation("crit_026","Bucana Health Center","Bucana, Davao City",7.0728,125.6225),
-    MapLocation("crit_027","Pampanga Health Center","Pampanga, Davao City",7.0735,125.5910),
-    MapLocation("crit_028","Indangan Health Center","Indangan, Davao City",7.1258,125.5998),
-    MapLocation("crit_029","Tibungco Health Center","Tibungco, Davao City",7.1168,125.6348),
-    MapLocation("crit_030","Sirawan Health Center","Sirawan, Davao City",6.9855,125.5648),
-    MapLocation("crit_031","Communal Health Center","Communal, Davao City",7.1068,125.6288),
-    MapLocation("crit_032","Waan Health Center","Waan, Davao City",7.1010,125.5775),
-    MapLocation("crit_033","Lacson Health Center","Lacson, Davao City",7.0982,125.6048),
-    MapLocation("crit_034","Leon Garcia Health Center","Leon Garcia, Davao City",7.0808,125.6175),
-    MapLocation("crit_035","Lapu-Lapu Health Center","Lapu-Lapu, Davao City",7.0902,125.6058),
-    MapLocation("crit_036","Uyanguren Health Center","Uyanguren, Davao City",7.0668,125.6128),
-    MapLocation("crit_037","Dumoy Health Center","Dumoy, Davao City",7.0560,125.5758),
-    MapLocation("crit_038","Eden Health Center","Eden, Davao City",7.1818,125.4548),
-    MapLocation("crit_039","Baliok Health Center","Baliok, Davao City",7.0048,125.5348),
-    MapLocation("crit_040","Binugao Health Center","Binugao, Davao City",7.0018,125.5188),
-    MapLocation("crit_041","Ula Health Center","Ula, Davao City",7.0198,125.4798),
-    MapLocation("crit_042","New Valencia Health Center","New Valencia, Davao City",7.1118,125.5098),
-    MapLocation("crit_043","Bangkas Heights Health Center","Bangkas Heights, Davao City",7.0418,125.5838),
-    MapLocation("crit_044","North Davao Medical Center (Tagum Road)","Buhangin-Tagum Rd., Davao City",7.1035,125.6340),
-    MapLocation("crit_045","Toril District Hospital","Toril, Davao City",6.9975,125.5255)
+// Critical Facilities - Davao City hospitals & barangay health centers
+private val Hospitals: List<MapLocation> = listOf(
+    MapLocation("hosp_01", "Davao Doctors Hospital", "Elpidio Quirino Ave., Poblacion, Davao City", 7.0702845, 125.6047170),
+    MapLocation("hosp_02", "Southern Philippines Medical Center (SPMC)", "J.P. Laurel Ave., Bajada, Davao City", 7.0983727, 125.6198369),
+    MapLocation("hosp_03", "San Pedro Hospital of Davao City", "Guzman St., Poblacion, Davao City", 7.0790356, 125.6149564),
+    MapLocation("hosp_04", "Metro Davao Medical & Research Center", "J.P. Laurel Ave., Poblacion, Davao City", 7.0950317, 125.6132555),
+    MapLocation("hosp_05", "Brokenshire Medical Center", "Brokenshire Dr., Madapo, Poblacion, Davao City", 7.0739669, 125.5983517),
+    MapLocation("hosp_06", "Ricardo Limso Medical Center", "Ilustre St., Poblacion, Davao City", 7.0705024, 125.6068573),
+    MapLocation("hosp_07", "Anda Riverview Medical Center", "Magallanes St., Poblacion, Davao City", 7.0651484, 125.6055039),
+    MapLocation("hosp_08", "Adventist Hospital Davao", "Km. 7 Central Park Blvd., Talomo, Davao City", 7.0601280, 125.5550516),
+    MapLocation("hosp_09", "United Davao Specialists Hospital", "Km. 4 McArthur Hwy., Ma-a, Talomo, Davao City", 7.0626620, 125.5903772),
+    MapLocation("hosp_10", "Lanang Premiere Doctors Hospital (LPDHI)", "Dacudao Loop, Agdao, Davao City", 7.0973874, 125.6330686),
+    MapLocation("hosp_11", "Alterado General Hospital", "R. Castillo St., Agdao, Davao City", 7.0869287, 125.6320453),
+    MapLocation("hosp_12", "GIG Oca Robles Seamen's Hospital (AMOSUP)", "R. Castillo St., Agdao, Davao City", 7.0948215, 125.6377403),
+    MapLocation("hosp_13", "Isaac T. Robillo Hospital Corporation", "Km. 26 Davao-Bukidnon Rd., Calinan, Davao City", 7.1778130, 125.4666947),
+    MapLocation("hosp_14", "Ernesto Guadalupe Community Hospital", "Jasmin St., Toril, Davao City", 7.0095607, 125.5029289),
+    MapLocation("hosp_15", "Davao Mediquest Hospital", "Toril District, Davao City", 7.0114372, 125.4895749)
 )
-
-// ── Reusable list-item UI ────────────────────────────────────────────────────
+private val BarangayHealthCenters: List<MapLocation> = listOf(
+    MapLocation("bhc_01", "Davao City Health Office (Main)", "124 Pichon St., Poblacion, Davao City", 7.0627934, 125.6093287),
+    MapLocation("bhc_02", "Barangay 4-A Health Center", "Pelayo St., Poblacion, Davao City", 7.0714651, 125.6070907),
+    MapLocation("bhc_03", "Barangay 14-B Health Center", "Buyayang St., Poblacion, Davao City", 7.0782621, 125.6167950),
+    MapLocation("bhc_04", "Barangay 17-B Health Center", "Nidea St., Obrero, Davao City", 7.0847915, 125.6168798),
+    MapLocation("bhc_05", "Barangay 19-B Health Center", "Bacaca Road, Poblacion, Davao City", 7.0906575, 125.6065697),
+    MapLocation("bhc_06", "Barangay 20-B Health Center", "Porras Veloso St., Obrero, Davao City", 7.0871703, 125.6131411),
+    MapLocation("bhc_07", "Barangay 37-D Health Center", "Talomo District, Davao City", 7.0634652, 125.6139261),
+    MapLocation("bhc_08", "Barangay 38-D Health Center", "J.P. Rizal St., Poblacion, Davao City", 7.0644833, 125.6113759),
+    MapLocation("bhc_09", "Barangay Health Center (Quezon St.)", "Aurora, Quezon St., Poblacion, Davao City", 7.0673795, 125.6178744),
+    MapLocation("bhc_10", "Talomo North Health Center", "Daang Patnubay, Talomo, Davao City", 7.0631314, 125.6030102),
+    MapLocation("bhc_11", "Talomo Central Health Center", "Libra St., Talomo, Davao City", 7.0593566, 125.5743967),
+    MapLocation("bhc_12", "Gravahan Matina Health Center", "Gravahan, New Matina, Davao City", 7.0646935, 125.5983747),
+    MapLocation("bhc_13", "Matina Aplaya Health Center", "Talomo District, Davao City", 7.0449283, 125.5681947),
+    MapLocation("bhc_14", "Barangay Ma-a Health Center", "Don Julian Rodriguez Ave., Talomo, Davao City", 7.0900001, 125.5798976),
+    MapLocation("bhc_15", "Barangay Catalunan Pequeno Health Center", "Talomo District, Davao City", 7.0759470, 125.5181453),
+    MapLocation("bhc_16", "Barangay Health Center (Langub Rd.)", "Langub Rd., Talomo, Davao City", 7.1057348, 125.5629327),
+    MapLocation("bhc_17", "Agdao Health Center", "Lapu-Lapu St., Agdao, Davao City", 7.0811802, 125.6221175),
+    MapLocation("bhc_18", "Barangay Centro Health Center", "Agdao District, Davao City", 7.0897572, 125.6396312),
+    MapLocation("bhc_19", "Barangay Gov. Vicente Duterte Health Center", "Barangay Hall, Agdao, Davao City", 7.0895138, 125.6278057),
+    MapLocation("bhc_20", "Barangay Ubalde Health Center", "Lakandula St., Agdao, Davao City", 7.0951174, 125.6346517),
+    MapLocation("bhc_21", "R. Castillo Barangay Health Center", "Agdao District, Davao City", 7.1005261, 125.6354879),
+    MapLocation("bhc_22", "Buhangin Health Center", "NHA Chapel St., Buhangin, Davao City", 7.1138593, 125.6248024),
+    MapLocation("bhc_23", "Cabantian Barangay Health Center Annex", "Km. 10 Cabantian Rd., Buhangin, Davao City", 7.1378141, 125.6069231),
+    MapLocation("bhc_24", "Waan Barangay Health Center", "Buhangin District, Davao City", 7.1270437, 125.5754222),
+    MapLocation("bhc_25", "Calinan Health Center", "Calinan District, Davao City", 7.1891786, 125.4604692),
+    MapLocation("bhc_26", "Jacinto Barangay Health Center", "Jacinto St., Calinan, Davao City", 7.1895600, 125.4559220),
+    MapLocation("bhc_27", "Tamayong Barangay Health Center", "Calinan District, Davao City", 7.1323026, 125.3795120),
+    MapLocation("bhc_28", "Toril Health Center", "Agton St., Toril, Davao City", 7.0198198, 125.4973253),
+    MapLocation("bhc_29", "Toril Urban Health Center (Toril-B)", "Juan de la Cruz St., Toril, Davao City", 7.0116640, 125.5018949),
+    MapLocation("bhc_30", "Barangay Health Center of North Daliao", "Prudential Village, Toril, Davao City", 7.0161639, 125.5108094),
+    MapLocation("bhc_31", "Barangay Health Center (Tugbok)", "Purok 2, Tugbok District, Davao City", 7.0785074, 125.4953063)
+)
+// Combined list consumed by the rest of the app (46 total)
+val CriticalFacilities: List<MapLocation> = Hospitals + BarangayHealthCenters
+// Reusable list-item UI
 @Composable
 fun LocationListItem(
     location: MapLocation,

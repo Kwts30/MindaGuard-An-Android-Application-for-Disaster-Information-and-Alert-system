@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.io.File
+import com.mobiledev.mindaguard.data.fallbackMapLayers
 
 // ── Data model for a single hazard layer ─────────────────────────────────────
 
@@ -77,7 +78,7 @@ class MapLayerViewModel(application: Application) : AndroidViewModel(application
     init {
         // Offline-first: show built-in catalogue immediately,
         // restoring any layers that were previously downloaded
-        _layers.value = fallbackLayers().map { model ->
+        _layers.value = fallbackMapLayers().map { model ->
             val cached = cachedFileFor(model.layer)
             if (cached.exists()) {
                 model.copy(
@@ -199,99 +200,5 @@ class MapLayerViewModel(application: Application) : AndroidViewModel(application
     private fun updateLayer(layerId: String, transform: (MapLayerUiModel) -> MapLayerUiModel) {
         _layers.update { list -> list.map { if (it.layer.id == layerId) transform(it) else it } }
     }
-
-    /** Fallback catalogue — always shown even without Firebase */
-    private fun fallbackLayers(): List<MapLayerUiModel> = listOf(
-
-        // ── Flood ────────────────────────────────────────────────────────
-        MapLayerUiModel(layer = MapLayer(
-            id = "flood_5yr",
-            name = "Flood – 5 Year",
-            category = "flood",
-            storagePath = "layers/flood_5yr.geojson",
-            color = "#29B6F6",
-            strokeColor = "#0277BD",
-            description = "5-year flood return period"
-        )),
-        MapLayerUiModel(layer = MapLayer(
-            id = "flood_25yr",
-            name = "Flood – 25 Year",
-            category = "flood",
-            storagePath = "layers/flood_25yr.geojson",
-            color = "#0288D1",
-            strokeColor = "#01579B",
-            description = "25-year flood return period"
-        )),
-        MapLayerUiModel(layer = MapLayer(
-            id = "flood_100yr",
-            name = "Flood – 100 Year",
-            category = "flood",
-            storagePath = "layers/flood_100yr.geojson",
-            color = "#01579B",
-            strokeColor = "#002171",
-            description = "100-year flood return period"
-        )),
-
-        // ── Storm Surge (SSA Advisories) ─────────────────────────────────
-        MapLayerUiModel(layer = MapLayer(
-            id = "storm_surge_ssa1",
-            name = "Storm Surge – SSA 1",
-            category = "storm_surge",
-            storagePath = "layers/storm_surge_ssa1.geojson",
-            color = "#FFF176",
-            strokeColor = "#F9A825",
-            description = "Storm Surge Advisory 1 (0.1–0.5m)"
-        )),
-        MapLayerUiModel(layer = MapLayer(
-            id = "storm_surge_ssa2",
-            name = "Storm Surge – SSA 2",
-            category = "storm_surge",
-            storagePath = "layers/storm_surge_ssa2.geojson",
-            color = "#FFB74D",
-            strokeColor = "#E65100",
-            description = "Storm Surge Advisory 2 (0.5–1.0m)"
-        )),
-        MapLayerUiModel(layer = MapLayer(
-            id = "storm_surge_ssa3",
-            name = "Storm Surge – SSA 3",
-            category = "storm_surge",
-            storagePath = "layers/storm_surge_ssa3.geojson",
-            color = "#EF5350",
-            strokeColor = "#B71C1C",
-            description = "Storm Surge Advisory 3 (1.0–3.0m)"
-        )),
-        MapLayerUiModel(layer = MapLayer(
-            id = "storm_surge_ssa4",
-            name = "Storm Surge – SSA 4",
-            category = "storm_surge",
-            storagePath = "layers/storm_surge_ssa4.geojson",
-            color = "#880E4F",
-            strokeColor = "#4A0030",
-            description = "Storm Surge Advisory 4 (>3.0m)"
-        )),
-
-        // ── Earthquake Faults ─────────────────────────────────────────
-        MapLayerUiModel(layer = MapLayer(
-            id = "earthquake_faults",
-            name = "Earthquake Active Faults",
-            category = "earthquake",
-            storagePath = "layers/earthquake_faults.geojson",
-            color = "#FF6F00",
-            strokeColor = "#BF360C",
-            description = "Active fault lines — Davao Region (PHIVOLCS 2025)"
-        )),
-
-        // ── Landslide ─────────────────────────────────────────────────────
-        MapLayerUiModel(layer = MapLayer(
-            id = "landslide",
-            name = "Landslide Susceptibility",
-            category = "landslide",
-            storagePath = "layers/landslide.geojson",
-            color = "#FF8F00",
-            strokeColor = "#E65100",
-            description = "Landslide susceptibility zones"
-        ))
-    )
 }
-
 

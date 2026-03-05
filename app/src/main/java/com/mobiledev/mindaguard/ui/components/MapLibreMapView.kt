@@ -91,12 +91,40 @@ private fun locationsToGeoJson(locations: List<MapLocation>): String {
     }.toString()
 }
 
+// Build separate GeoJSON for focused pin vs the rest
+private fun alertsToGeoJson(locations: List<MapLocation>, focusedId: String?): Pair<String, String> {
+    val normal  = JSONArray()
+    val focused = JSONArray()
+    locations.forEach { loc ->
+        val feature = JSONObject().apply {
+            put("type", "Feature")
+            put("geometry", JSONObject().apply {
+                put("type", "Point")
+                put("coordinates", JSONArray().apply { put(loc.lng); put(loc.lat) })
+            })
+            put("properties", JSONObject().apply {
+                put("id", loc.id)
+                put("name", loc.name)
+                put("address", loc.address)
+            })
+        }
+        if (loc.id == focusedId) focused.put(feature) else normal.put(feature)
+    }
+    fun wrap(arr: JSONArray) = JSONObject().apply {
+        put("type", "FeatureCollection")
+        put("features", arr)
+    }.toString()
+    return Pair(wrap(normal), wrap(focused))
+}
+
 /**
  * Full MapLibre Compose wrapper.
  *
- * @param showEvacPins  whether to show green evacuation-center circles
- * @param showCritPins  whether to show red critical-facility circles
- * @param flyToLocation when non-null, the map animates to that location
+ * @param showEvacPins   whether to show green evacuation-center circles
+ * @param showCritPins   whether to show red critical-facility circles
+ * @param alertPins      community alert locations to show as orange pins
+ * @param focusedAlertId id of the currently-selected alert pin (rendered larger)
+ * @param flyToLocation  when non-null, the map animates to that location
  */
 @Composable
 fun MapLibreMapView(
@@ -105,10 +133,13 @@ fun MapLibreMapView(
     mapStyleJson: String = SATELLITE_STYLE_JSON,
     showEvacPins: Boolean = true,
     showCritPins: Boolean = true,
+    alertPins: List<MapLocation> = emptyList(),
+    focusedAlertId: String? = null,
     flyToLocation: MapLocation? = null,
     initialLat: Double = 7.0644,
     initialLng: Double = 125.6079,
     initialZoom: Double = 12.0,
+    frozen: Boolean = false,
     onMapReady: (MapLibreMap) -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -120,6 +151,8 @@ fun MapLibreMapView(
             var map: MapLibreMap? = null
             var currentStyleJson: String = ""
             var lastFlyTo: String? = null
+            var lastFocusedAlertId: String? = null
+            var lastAlertPinIds: String = ""   // joined IDs — detects list changes
         }
     }
 
@@ -183,9 +216,55 @@ fun MapLibreMapView(
         }
     }
 
+    // ── Alert community pins — orange ────────────────────────────────────────
+    fun applyAlertPins(style: Style) {
+        runCatching { style.removeLayer("alert_pins_focused_ring") }
+        runCatching { style.removeLayer("alert_pins_focused") }
+        runCatching { style.removeLayer("alert_pins") }
+        runCatching { style.removeSource("alert_src") }
+        runCatching { style.removeSource("alert_src_focused") }
+
+        if (alertPins.isEmpty()) return
+
+        val (normalJson, focusedJson) = alertsToGeoJson(alertPins, focusedAlertId)
+
+        // Normal alert pins — orange circle
+        style.addSource(GeoJsonSource("alert_src", normalJson))
+        style.addLayer(CircleLayer("alert_pins", "alert_src").apply {
+            setProperties(
+                circleRadius(9f),
+                circleColor(AndroidColor.parseColor("#F57C00")),   // deep orange
+                circleStrokeWidth(2f),
+                circleStrokeColor(AndroidColor.WHITE)
+            )
+        })
+
+        // Focused (selected) alert pin — larger with white ring
+        style.addSource(GeoJsonSource("alert_src_focused", focusedJson))
+        // Outer white halo
+        style.addLayer(CircleLayer("alert_pins_focused_ring", "alert_src_focused").apply {
+            setProperties(
+                circleRadius(18f),
+                circleColor(AndroidColor.parseColor("#33F57C00")),  // semi-transparent orange
+                circleStrokeWidth(3f),
+                circleStrokeColor(AndroidColor.parseColor("#F57C00"))
+            )
+        })
+        // Inner filled circle
+        style.addLayer(CircleLayer("alert_pins_focused", "alert_src_focused").apply {
+            setProperties(
+                circleRadius(11f),
+                circleColor(AndroidColor.parseColor("#F57C00")),
+                circleStrokeWidth(2.5f),
+                circleStrokeColor(AndroidColor.WHITE)
+            )
+        })
+    }
+
     fun applyAll(style: Style) {
         applyHazardLayers(style)
         applyPinLayers(style)
+        applyAlertPins(style)
     }
 
     AndroidView(
@@ -197,6 +276,15 @@ fun MapLibreMapView(
                     map.uiSettings.isCompassEnabled = false
                     map.uiSettings.isLogoEnabled = false
                     map.uiSettings.isAttributionEnabled = false
+                    // Freeze: disable all touch interaction
+                    if (frozen) {
+                        map.uiSettings.isScrollGesturesEnabled = false
+                        map.uiSettings.isZoomGesturesEnabled = false
+                        map.uiSettings.isRotateGesturesEnabled = false
+                        map.uiSettings.isTiltGesturesEnabled = false
+                        map.uiSettings.isDoubleTapGesturesEnabled = false
+                        map.uiSettings.isQuickZoomGesturesEnabled = false
+                    }
                     map.setStyle(Style.Builder().fromJson(mapStyleJson)) { style ->
                         applyAll(style)
                     }
@@ -221,11 +309,25 @@ fun MapLibreMapView(
                 )
             }
 
+            val currentAlertPinIds = alertPins.joinToString(",") { it.id }
+            val alertsChanged = currentAlertPinIds != mapRef.lastAlertPinIds
+            val focusChanged  = focusedAlertId != mapRef.lastFocusedAlertId
+
+            if (alertsChanged) mapRef.lastAlertPinIds = currentAlertPinIds
+            if (focusChanged)  mapRef.lastFocusedAlertId = focusedAlertId
+
             // Switch base style or re-apply overlays
             if (mapRef.currentStyleJson != mapStyleJson) {
                 mapRef.currentStyleJson = mapStyleJson
                 map.setStyle(Style.Builder().fromJson(mapStyleJson)) { style ->
                     applyAll(style)
+                }
+            } else if (alertsChanged || focusChanged) {
+                // Only alert pins changed — just re-apply alert layer, not full style reload
+                map.style?.let { style ->
+                    applyHazardLayers(style)
+                    applyPinLayers(style)
+                    applyAlertPins(style)
                 }
             } else {
                 map.style?.let { applyAll(it) }

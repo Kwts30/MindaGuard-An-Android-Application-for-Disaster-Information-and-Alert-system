@@ -2,6 +2,13 @@ package com.mobiledev.mindaguard.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -12,16 +19,19 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Air
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.Landscape
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Satellite
-import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.filled.Terrain
+import androidx.compose.material.icons.filled.Water
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,19 +40,26 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.mobiledev.mindaguard.R
+import kotlinx.coroutines.delay
 import com.mobiledev.mindaguard.backend.LayerDownloadState
 import com.mobiledev.mindaguard.backend.MapLayerUiModel
 import com.mobiledev.mindaguard.backend.MapLayerViewModel
 import com.mobiledev.mindaguard.ui.components.CriticalFacilities
 import com.mobiledev.mindaguard.ui.components.EvacCenters
-import com.mobiledev.mindaguard.ui.components.LocationListItem
 import com.mobiledev.mindaguard.ui.components.MapLibreMapView
 import com.mobiledev.mindaguard.ui.components.MapLocation
 import com.mobiledev.mindaguard.ui.components.SATELLITE_STYLE_JSON
 import com.mobiledev.mindaguard.ui.components.CLASSIC_STYLE_JSON
+import com.mobiledev.mindaguard.ui.components.SearchableLocationSheet
+import com.mobiledev.mindaguard.theme.GreenSuccess
+import com.mobiledev.mindaguard.theme.CriticalRed
+import com.mobiledev.mindaguard.theme.SearchBarBg
 
 /* ─────────────────────────── Map Style ─────────────────────────── */
 
@@ -86,10 +103,20 @@ fun MapScreen(
     var showCritPins by remember { mutableStateOf(true) }
 
     // Fly-to: set when a list item is tapped
-    var flyToLocation by remember { mutableStateOf<com.mobiledev.mindaguard.ui.components.MapLocation?>(null) }
+    var flyToLocation by remember { mutableStateOf<MapLocation?>(null) }
 
     // Hold a reference to the live MapLibreMap for the compass reset
     var mapInstance by remember { mutableStateOf<org.maplibre.android.maps.MapLibreMap?>(null) }
+
+    // Loading overlay — shown until map tiles are ready AND minimum delay has passed
+    var mapReady by remember { mutableStateOf(false) }
+    var delayDone by remember { mutableStateOf(false) }
+    val showLoader = !mapReady || !delayDone
+
+    LaunchedEffect(Unit) {
+        delay(1800L)   // minimum display time for the loading screen
+        delayDone = true
+    }
 
     val bottomSheetState = rememberStandardBottomSheetState(
         initialValue = SheetValue.PartiallyExpanded,
@@ -104,13 +131,16 @@ fun MapScreen(
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         sheetContent = {
             when (currentTab) {
-                MapTab.EVACUATION -> EvacuationSheetContent(
-                    currentTab = currentTab,
-                    onTabChange = { tab -> currentTab = tab; searchQuery = "" },
+                MapTab.EVACUATION -> SearchableLocationSheet(
+                    title = "Evacuation Centers",
                     searchQuery = searchQuery,
                     onSearchChange = { searchQuery = it },
+                    searchPlaceholder = "Search evacuation center",
                     locations = EvacCenters,
-                    onLocationClick = { loc -> flyToLocation = loc }
+                    pinColor = GreenSuccess,
+                    emptyMessage = "No matching evacuation center found",
+                    onLocationClick = { loc -> flyToLocation = loc },
+                    tabsContent = { MapTabs(currentTab = currentTab, onTabChange = { tab -> currentTab = tab; searchQuery = "" }) }
                 )
                 MapTab.HAZARD -> HazardSheetContent(
                     currentTab = currentTab,
@@ -122,13 +152,16 @@ fun MapScreen(
                     onDelete = { layerViewModel.deleteLocalLayer(it) },
                     onRefresh = { layerViewModel.fetchLayers() }
                 )
-                MapTab.CRITICAL -> CriticalSheetContent(
-                    currentTab = currentTab,
-                    onTabChange = { tab -> currentTab = tab; searchQuery = "" },
+                MapTab.CRITICAL -> SearchableLocationSheet(
+                    title = "Critical Facilities",
                     searchQuery = searchQuery,
                     onSearchChange = { searchQuery = it },
+                    searchPlaceholder = "Search hospital or health center",
                     locations = CriticalFacilities,
-                    onLocationClick = { loc -> flyToLocation = loc }
+                    pinColor = CriticalRed,
+                    emptyMessage = "No matching facility found",
+                    onLocationClick = { loc -> flyToLocation = loc },
+                    tabsContent = { MapTabs(currentTab = currentTab, onTabChange = { tab -> currentTab = tab; searchQuery = "" }) }
                 )
             }
         }
@@ -146,10 +179,19 @@ fun MapScreen(
                 showEvacPins = showEvacPins,
                 showCritPins = showCritPins,
                 flyToLocation = flyToLocation,
-                onMapReady = { map -> mapInstance = map }
+                onMapReady = { map ->
+                    mapInstance = map
+                    mapReady = true
+                }
             )
 
-            // ── Error snackbar ───────────────────────────────────────────
+            // ── MindaGuard logo loading overlay ──────────────────────────
+            AnimatedVisibility(
+                visible = showLoader,
+                exit = fadeOut(animationSpec = tween(durationMillis = 500))
+            ) {
+                MapLoadingOverlay()
+            }
             if (errorMsg != null) {
                 Surface(
                     modifier = Modifier
@@ -507,23 +549,24 @@ private fun LayerRowItem(
     onDownload: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val isDownloaded = model.downloadState is LayerDownloadState.Downloaded
+    val isDownloaded  = model.downloadState is LayerDownloadState.Downloaded
     val isDownloading = model.downloadState is LayerDownloadState.Downloading
-    val progress = (model.downloadState as? LayerDownloadState.Downloading)?.progress ?: 0f
+    val progress      = (model.downloadState as? LayerDownloadState.Downloading)?.progress ?: 0f
     val animatedProgress by animateFloatAsState(targetValue = progress, label = "progress")
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(10.dp))
+            .background(if (model.isVisible && isDownloaded) Color(0xFFF5F5F5) else Color.Transparent)
             .clickable(enabled = isDownloaded) { onToggleVisibility() }
-            .padding(vertical = 6.dp, horizontal = 4.dp),
+            .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Colour swatch
+        // Color swatch dot
         Box(
             modifier = Modifier
-                .size(12.dp)
+                .size(10.dp)
                 .clip(CircleShape)
                 .background(
                     runCatching {
@@ -532,63 +575,90 @@ private fun LayerRowItem(
                 )
         )
 
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = model.layer.name,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Medium,
+                text     = model.layer.name,
+                style    = MaterialTheme.typography.bodySmall,
+                fontWeight = if (model.isVisible && isDownloaded) FontWeight.SemiBold else FontWeight.Normal,
+                color    = if (model.isVisible && isDownloaded) Color(0xFF1A1A1A) else Color(0xFF555555),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             if (isDownloading) {
+                Spacer(Modifier.height(4.dp))
                 LinearProgressIndicator(
-                    progress = { animatedProgress },
-                    modifier = Modifier
+                    progress    = { animatedProgress },
+                    modifier    = Modifier
                         .fillMaxWidth()
-                        .height(3.dp)
-                        .padding(top = 2.dp),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = Color(0xFFE0E0E0)
+                        .height(2.dp),
+                    color       = MaterialTheme.colorScheme.primary,
+                    trackColor  = Color(0xFFE0E0E0)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.width(4.dp))
+        Spacer(Modifier.width(8.dp))
 
         when {
             isDownloading -> {
-                // show spinner only, no tap action
-                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                CircularProgressIndicator(
+                    modifier    = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color       = MaterialTheme.colorScheme.primary
+                )
             }
             isDownloaded -> {
-                // visibility toggle checkbox
-                Checkbox(
-                    checked = model.isVisible,
+                // Switch toggle for visibility
+                Switch(
+                    checked         = model.isVisible,
                     onCheckedChange = { onToggleVisibility() },
-                    modifier = Modifier.size(20.dp)
+                    modifier        = Modifier.height(24.dp),
+                    colors          = SwitchDefaults.colors(
+                        checkedThumbColor   = Color.White,
+                        checkedTrackColor   = MaterialTheme.colorScheme.primary,
+                        uncheckedThumbColor = Color.White,
+                        uncheckedTrackColor = Color(0xFFCCCCCC)
+                    )
                 )
-                Spacer(modifier = Modifier.width(4.dp))
-                // delete cached file
-                IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
+                Spacer(Modifier.width(4.dp))
+                IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
                     Icon(
                         Icons.Default.Delete,
                         contentDescription = "Remove layer",
-                        modifier = Modifier.size(16.dp),
-                        tint = Color(0xFFE53935)
+                        modifier = Modifier.size(15.dp),
+                        tint     = Color(0xFFBDBDBD)
                     )
                 }
             }
             else -> {
-                // download button
-                IconButton(onClick = onDownload, modifier = Modifier.size(24.dp)) {
-                    Icon(
-                        Icons.Default.Download,
-                        contentDescription = "Download layer",
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+                // Download button
+                Surface(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable { onDownload() },
+                    color    = Color(0xFFF0F4FF),
+                    shape    = RoundedCornerShape(6.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Download,
+                            contentDescription = "Download",
+                            modifier = Modifier.size(13.dp),
+                            tint     = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            "Get",
+                            style      = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color      = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
         }
@@ -596,6 +666,24 @@ private fun LayerRowItem(
 }
 
 /* ─────────────────────────── Hazard Sheet (bottom sheet tab) ─────────────────────────── */
+
+// Category icon mapping — Material icons, no emojis
+@Composable
+private fun categoryIcon(cat: String): androidx.compose.ui.graphics.vector.ImageVector = when (cat) {
+    "flood"       -> Icons.Default.Water
+    "storm_surge" -> Icons.Default.Air
+    "earthquake"  -> Icons.Default.Terrain
+    "landslide"   -> Icons.Default.Landscape
+    else          -> Icons.Default.Layers
+}
+
+private fun categoryLabel(cat: String): String = when (cat) {
+    "flood"       -> "Flood"
+    "storm_surge" -> "Storm Surge"
+    "earthquake"  -> "Earthquake Faults"
+    "landslide"   -> "Landslide"
+    else          -> cat.replaceFirstChar { it.uppercase() }
+}
 
 @Composable
 private fun HazardSheetContent(
@@ -614,262 +702,166 @@ private fun HazardSheetContent(
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         MapTabs(currentTab = currentTab, onTabChange = onTabChange)
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(Modifier.height(16.dp))
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        // Header row
+        Row(
+            modifier          = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector        = Icons.Default.Layers,
+                contentDescription = null,
+                tint               = Color(0xFF444444),
+                modifier           = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(8.dp))
             Text(
-                text = "Hazard Layers",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f)
+                text       = "Hazard Layers",
+                style      = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color      = Color(0xFF1A1A1A),
+                modifier   = Modifier.weight(1f)
             )
             if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
             } else {
-                TextButton(onClick = onRefresh, contentPadding = PaddingValues(horizontal = 4.dp)) {
-                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(2.dp))
-                    Text("Refresh", style = MaterialTheme.typography.labelSmall)
+                IconButton(
+                    onClick  = onRefresh,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Refresh,
+                        contentDescription = "Refresh",
+                        modifier = Modifier.size(16.dp),
+                        tint     = Color(0xFF888888)
+                    )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(Modifier.height(4.dp))
         Text(
-            text = "Download layers to view them on the map. Tap the checkbox to toggle visibility.",
+            text  = "Tap Get to download a layer, then toggle it on or off.",
             style = MaterialTheme.typography.bodySmall,
-            color = Color.Gray
+            color = Color(0xFF888888)
         )
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(Modifier.height(14.dp))
 
-        val grouped = layers.groupBy { it.layer.category }
+        val grouped       = layers.groupBy { it.layer.category }
         val categoryOrder = listOf("flood", "storm_surge", "earthquake", "landslide")
-        val categoryLabels = mapOf(
-            "flood"        to "🌊  Flood",
-            "storm_surge"  to "🌀  Storm Surge",
-            "earthquake"   to "⚡  Earthquake Faults",
-            "landslide"    to "🏔  Landslide"
-        )
 
         LazyColumn(
-            modifier = Modifier
+            modifier            = Modifier
                 .fillMaxWidth()
-                .heightIn(max = 300.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+                .heightIn(max = 320.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             (categoryOrder + grouped.keys.filter { it !in categoryOrder }).forEach { cat ->
                 val catLayers = grouped[cat] ?: return@forEach
+
+                // Category header
                 item {
-                    Text(
-                        text = categoryLabels[cat] ?: cat,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF444444),
-                        modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)
-                    )
+                    Row(
+                        modifier          = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 10.dp, bottom = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector        = categoryIcon(cat),
+                            contentDescription = null,
+                            tint               = Color(0xFF666666),
+                            modifier           = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text       = categoryLabel(cat).uppercase(),
+                            style      = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color      = Color(0xFF666666)
+                        )
+                    }
+                    HorizontalDivider(thickness = 0.5.dp, color = Color(0xFFEEEEEE))
                 }
+
                 items(catLayers, key = { it.layer.id }) { model ->
                     LayerRowItem(
-                        model = model,
+                        model              = model,
                         onToggleVisibility = { onToggleVisibility(model.layer.id) },
-                        onDownload = { onDownload(model.layer.id) },
-                        onDelete = { onDelete(model.layer.id) }
+                        onDownload         = { onDownload(model.layer.id) },
+                        onDelete           = { onDelete(model.layer.id) }
                     )
-                    HorizontalDivider(thickness = 0.5.dp, color = Color(0xFFEEEEEE))
                 }
             }
 
             if (layers.isEmpty() && !isLoading) {
                 item {
-                    Text(
-                        text = "No layers found. Check your internet connection.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(vertical = 16.dp)
-                    )
+                    Box(
+                        modifier         = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Layers,
+                                contentDescription = null,
+                                tint     = Color(0xFFCCCCCC),
+                                modifier = Modifier.size(32.dp)
+                            )
+                            Text(
+                                text  = "No layers available.\nCheck your connection.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFFAAAAAA),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
+                    }
                 }
             }
+
+            item { Spacer(Modifier.height(80.dp)) }
         }
     }
 }
 
-/* ─────────────────────────── Evacuation Sheet ─────────────────────────── */
+/* ─────────────────────────── Map Loading Overlay ─────────────────────────── */
 
 @Composable
-private fun EvacuationSheetContent(
-    currentTab: MapTab,
-    onTabChange: (MapTab) -> Unit,
-    searchQuery: String,
-    onSearchChange: (String) -> Unit,
-    locations: List<MapLocation>,
-    onLocationClick: (MapLocation) -> Unit
-) {
-    val bestMatch: MapLocation? = remember(searchQuery, locations) {
-        if (searchQuery.isBlank()) return@remember null
-        val lowered = searchQuery.trim().lowercase()
-        locations.filter {
-            it.name.contains(lowered, ignoreCase = true) ||
-                    it.address.contains(lowered, ignoreCase = true)
-        }.minByOrNull { loc ->
-            val ni = loc.name.lowercase().indexOf(lowered).let { if (it == -1) Int.MAX_VALUE else it }
-            val ai = loc.address.lowercase().indexOf(lowered).let { if (it == -1) Int.MAX_VALUE else it }
-            minOf(ni, ai)
-        }
-    }
+private fun MapLoadingOverlay() {
+    // Infinite pulse animation on the logo scale
+    val infiniteTransition = rememberInfiniteTransition(label = "logo_pulse")
+    val pulse by infiniteTransition.animateFloat(
+        initialValue = 0.92f,
+        targetValue = 1.08f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 800),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse_scale"
+    )
 
-    Column(
+    Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .fillMaxSize()
+            .background(Color.White),
+        contentAlignment = Alignment.Center
     ) {
-        MapTabs(currentTab = currentTab, onTabChange = onTabChange)
-        Spacer(modifier = Modifier.height(12.dp))
-        Text("Evacuation Centers", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Surface(
-            modifier = Modifier.fillMaxWidth().height(48.dp),
-            color = Color(0xFFF1F1F1),
-            shape = RoundedCornerShape(24.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)
-            ) {
-                Icon(Icons.Outlined.Search, contentDescription = "Search")
-                Spacer(modifier = Modifier.width(8.dp))
-                TextField(
-                    value = searchQuery,
-                    onValueChange = onSearchChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Search evacuation center") },
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        cursorColor = Color.Black,
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black,
-                        focusedPlaceholderColor = Color.Gray,
-                        unfocusedPlaceholderColor = Color.Gray
-                    ),
-                    singleLine = true,
-                    maxLines = 1
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-        Box(modifier = Modifier.fillMaxWidth().imePadding().heightIn(min = 0.dp, max = 260.dp)) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (searchQuery.isBlank()) {
-                    items(locations, key = { it.id }) { loc ->
-                        LocationListItem(location = loc, pinColor = Color(0xFF2E7D32), onClick = { onLocationClick(loc) })
-                    }
-                } else {
-                    if (bestMatch != null) {
-                        item { LocationListItem(location = bestMatch, pinColor = Color(0xFF2E7D32), onClick = { onLocationClick(bestMatch) }) }
-                    } else {
-                        item { Text("No matching evacuation center found", style = MaterialTheme.typography.bodyMedium, color = Color.Gray) }
-                    }
-                }
-            }
-        }
+        Image(
+            painter = painterResource(id = R.drawable.icon_only),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier
+                .size(96.dp)
+                .scale(pulse)
+        )
     }
 }
 
-/* ─────────────────────────── Critical Facilities Sheet ─────────────────────────── */
-
-@Composable
-private fun CriticalSheetContent(
-    currentTab: MapTab,
-    onTabChange: (MapTab) -> Unit,
-    searchQuery: String,
-    onSearchChange: (String) -> Unit,
-    locations: List<MapLocation>,
-    onLocationClick: (MapLocation) -> Unit
-) {
-    val bestMatch: MapLocation? = remember(searchQuery, locations) {
-        if (searchQuery.isBlank()) return@remember null
-        val lowered = searchQuery.trim().lowercase()
-        locations.filter {
-            it.name.contains(lowered, ignoreCase = true) ||
-                    it.address.contains(lowered, ignoreCase = true)
-        }.minByOrNull { loc ->
-            val ni = loc.name.lowercase().indexOf(lowered).let { if (it == -1) Int.MAX_VALUE else it }
-            val ai = loc.address.lowercase().indexOf(lowered).let { if (it == -1) Int.MAX_VALUE else it }
-            minOf(ni, ai)
-        }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-    ) {
-        MapTabs(currentTab = currentTab, onTabChange = onTabChange)
-        Spacer(modifier = Modifier.height(12.dp))
-        Text("Critical Facilities", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Surface(
-            modifier = Modifier.fillMaxWidth().height(48.dp),
-            color = Color(0xFFF1F1F1),
-            shape = RoundedCornerShape(24.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)
-            ) {
-                Icon(Icons.Outlined.Search, contentDescription = "Search")
-                Spacer(modifier = Modifier.width(8.dp))
-                TextField(
-                    value = searchQuery,
-                    onValueChange = onSearchChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Search hospital or health center") },
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        cursorColor = Color.Black,
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black,
-                        focusedPlaceholderColor = Color.Gray,
-                        unfocusedPlaceholderColor = Color.Gray
-                    ),
-                    singleLine = true,
-                    maxLines = 1
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-        Box(modifier = Modifier.fillMaxWidth().imePadding().heightIn(min = 0.dp, max = 260.dp)) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (searchQuery.isBlank()) {
-                    items(locations, key = { it.id }) { loc ->
-                        LocationListItem(location = loc, pinColor = Color(0xFFC62828), onClick = { onLocationClick(loc) })
-                    }
-                } else {
-                    if (bestMatch != null) {
-                        item { LocationListItem(location = bestMatch, pinColor = Color(0xFFC62828), onClick = { onLocationClick(bestMatch) }) }
-                    } else {
-                        item { Text("No matching facility found", style = MaterialTheme.typography.bodyMedium, color = Color.Gray) }
-                    }
-                }
-            }
-        }
-    }
-}
 
 /* ─────────────────────────── Shared Tabs ─────────────────────────── */
 
@@ -881,7 +873,7 @@ private fun MapTabs(
     Row(
         Modifier
             .fillMaxWidth()
-            .background(Color(0xFFF1F1F1), RoundedCornerShape(24.dp))
+            .background(SearchBarBg, RoundedCornerShape(24.dp))
             .padding(4.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {

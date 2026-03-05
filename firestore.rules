@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper: check admin via Auth custom claim ─────────────────────────────
+    // Set the claim with Firebase Admin SDK:
+    //   admin.auth().setCustomUserClaims(uid, { role: 'admin' })
+    function isAdmin() {
+      return request.auth != null
+          && request.auth.token.role == 'admin';
+    }
+
+    // ── Users collection ──────────────────────────────────────────────────────
+    // Users can only read/write their own document.
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // ── Community Alerts ──────────────────────────────────────────────────────
+    // EVERYONE (including guests) can READ community alerts so that
+    // the feed is visible to all users regardless of sign-in status.
+    // Any authenticated user can CREATE an alert (submittedBy must match UID).
+    // Only admins can UPDATE or DELETE.
+    match /community_alerts/{alertId} {
+      allow read: if true;   // public — visible to all users & guests
+
+      allow create: if request.auth != null
+                    && request.resource.data.submittedBy == request.auth.uid;
+
+      allow update: if isAdmin();
+
+      allow delete: if isAdmin();
+    }
+  }
+}

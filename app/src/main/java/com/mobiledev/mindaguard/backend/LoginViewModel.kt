@@ -40,14 +40,8 @@ class LoginViewModel(
                 _uiState.value = LoginUiState.Error("Incorrect email or password.")
             } catch (e: Exception) {
                 val msg = e.message ?: ""
-                val isNetwork = msg.contains("network", ignoreCase = true) ||
-                        msg.contains("timeout", ignoreCase = true) ||
-                        msg.contains("timed out", ignoreCase = true) ||
-                        msg.contains("connect", ignoreCase = true) ||
-                        msg.contains("resolve", ignoreCase = true) ||
-                        msg.contains("socket", ignoreCase = true)
                 _uiState.value = LoginUiState.Error(
-                    if (isNetwork) "Poor connection. Tap to try again."
+                    if (isNetworkError(msg)) "Poor connection. Tap to try again."
                     else msg.ifBlank { "Login failed. Please try again." }
                 )
             }

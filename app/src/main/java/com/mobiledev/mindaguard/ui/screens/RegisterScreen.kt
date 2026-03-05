@@ -30,47 +30,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mobiledev.mindaguard.R
 import com.mobiledev.mindaguard.backend.RegisterUiState
 import com.mobiledev.mindaguard.backend.RegisterViewModel
-
-// Davao City districts and their barangays
-private val davaoDistricts = mapOf(
-    "District 1" to listOf(
-        "Agdao", "Buhangin", "Bunawan", "Callawa", "Communal", "Indangan",
-        "Lacson", "Lapu-lapu", "Mahayag", "Mandug", "New Valencia", "Panacan",
-        "Salapawan", "Sasa", "Tigatto", "Vicente Hizon Sr.", "Waan"
-    ),
-    "District 2" to listOf(
-        "Alambre", "Atan-Awe", "Biao Escuela", "Biao Guianga", "Biao Joaquin",
-        "Cabantian", "Calinan", "Cawayan", "Dacudao", "Dalagdag", "Dominga",
-        "Dumoy", "Fatima", "Kinuskusan", "Lacson", "Langub", "Lizada",
-        "Lubogan", "Mabuhay", "Malabog", "Mapula", "Marapangi", "Marilog",
-        "Matina Aplaya", "Matina Crossing", "Matina Pangi", "Mintal",
-        "Mudiang", "Mulig", "New Carmen", "New Visayas", "Paradise Embak",
-        "Riverside", "Sirib", "Suawan", "Subasta", "Talandang", "Taliñes",
-        "Tamayong", "Tamugan", "Tapak", "Tawan-Tawan", "Tibuloy",
-        "Tibungco", "Tigatto", "Toril", "Tugbok", "Ula"
-    ),
-    "District 3" to listOf(
-        "Baliok", "Binugao", "Bucana", "Catalunan Grande", "Catalunan Pequeño",
-        "Colosas", "Daliao", "Daliaon Plantation", "Eden", "Fatima",
-        "Generoso", "Gov. Paciano Bangoy", "Gov. Vicente Duterte",
-        "Gumalang", "Inawayan", "Kilate", "Lantic", "Malagos",
-        "Maligatong", "Mandug", "Manuel Guianga", "Mapula", "Marapangi",
-        "Matina Aplaya", "Mintal", "Mulig", "New Carmen", "Panacan",
-        "Pangyan", "Riverside", "Santo Niño", "Tacunan", "Tagakpan",
-        "Talandang", "Tamugan", "Toril", "Tungkalan", "Ula"
-    ),
-    "District 4" to listOf(
-        "Angalan", "Bago Aplaya", "Bago Gallera", "Bago Oshiro",
-        "Baliok", "Bangkas Heights", "Baracatan", "Barangay 1-40 (Poblacion)",
-        "Bucana", "Bunawan", "Cadalian", "Centro (San Juan)",
-        "Dacoville", "Diamond Heights", "Dumoy", "Fatima",
-        "Granville", "Ilang", "Km. 11", "Lacson", "Lanang",
-        "Lapanday", "Leon Garcia Sr.", "Light Industry and Science Park",
-        "Maa", "Magtuod", "Matina Aplaya", "Mintal", "Pampanga",
-        "Pañabo", "Riverside", "Sirawan", "Talomo Proper", "Tibungco",
-        "Toril", "Tugbok", "Uyanguren", "Wilfredo Aquino"
-    )
-)
+import com.mobiledev.mindaguard.data.davaoDistricts
+import com.mobiledev.mindaguard.ui.components.ErrorWithRetry
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -307,41 +268,23 @@ fun RegisterScreen(
 
                 // Error message
                 if (errorMessage != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = errorMessage,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    // If it looks like a network error, show a Try Again button
-                    val isNetworkError = errorMessage.contains("network", ignoreCase = true) ||
-                            errorMessage.contains("failed", ignoreCase = true) ||
-                            errorMessage.contains("timeout", ignoreCase = true) ||
-                            errorMessage.contains("connect", ignoreCase = true) ||
-                            errorMessage.contains("poor", ignoreCase = true)
-                    if (isNetworkError) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        TextButton(
-                            onClick = {
-                                viewModel.resetState()
-                                viewModel.register(
-                                    email = email,
-                                    password = password,
-                                    confirmPassword = confirmPassword,
-                                    firstName = firstName,
-                                    lastName = lastName,
-                                    mobile = mobile,
-                                    barangay = selectedBarangay,
-                                    district = selectedDistrict,
-                                    onSuccess = onRegisterSuccess
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Tap to try again", color = MaterialTheme.colorScheme.primary)
+                    ErrorWithRetry(
+                        errorMessage = errorMessage,
+                        onRetry = {
+                            viewModel.resetState()
+                            viewModel.register(
+                                email = email,
+                                password = password,
+                                confirmPassword = confirmPassword,
+                                firstName = firstName,
+                                lastName = lastName,
+                                mobile = mobile,
+                                barangay = selectedBarangay,
+                                district = selectedDistrict,
+                                onSuccess = onRegisterSuccess
+                            )
                         }
-                    }
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
