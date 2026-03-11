@@ -48,7 +48,7 @@ dependencies {
     implementation(libs.firebase.storage)
 
     // Location
-    implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation(libs.gms.location)
 
     // Image loading
     implementation(libs.coil.compose)
