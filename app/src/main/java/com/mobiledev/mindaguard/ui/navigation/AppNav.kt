@@ -48,6 +48,7 @@ import com.mobiledev.mindaguard.ui.screens.AdminAlertsScreen
 import com.mobiledev.mindaguard.ui.screens.AlertScreen
 import com.mobiledev.mindaguard.ui.screens.CommunityReport
 import com.mobiledev.mindaguard.ui.screens.CreateAlertScreen
+import com.mobiledev.mindaguard.ui.screens.EditProfileScreen
 import com.mobiledev.mindaguard.ui.screens.EarthquakeAlarmScreen
 import com.mobiledev.mindaguard.ui.screens.EarthquakeAlertScreen
 import com.mobiledev.mindaguard.ui.screens.EmergencyScreen
@@ -67,6 +68,7 @@ sealed class Screen(val route: String) {
     object Alerts : Screen("alerts")
     object Emergency : Screen("emergency")
     object Profile : Screen("profile")
+    object EditProfile : Screen("edit_profile")
     object CreateAlert : Screen("create_alert")
     object MyReports : Screen("my_reports")
     object AdminAlerts : Screen("admin_alerts")
@@ -317,7 +319,15 @@ fun AppNav() {
                 composable(Screen.Profile.route) {
                     ProfileScreen(
                         onBackClick = { navController.popBackStack() },
+                        onEditProfileClick = { navController.navigate(Screen.EditProfile.route) },
                         viewModel = profileViewModel
+                    )
+                }
+
+                composable(Screen.EditProfile.route) {
+                    EditProfileScreen(
+                        onBackClick = { navController.popBackStack() },
+                        profileViewModel = profileViewModel
                     )
                 }
 

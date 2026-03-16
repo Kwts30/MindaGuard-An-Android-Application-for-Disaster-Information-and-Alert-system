@@ -25,6 +25,13 @@ class AuthRepository {
         auth.createUserWithEmailAndPassword(email, password).await()
     }
 
+    /** Send a password reset email for an existing account. */
+    @Suppress("unused")
+    suspend fun sendPasswordResetEmail(email: String) {
+        // TODO: Keep this call behind your final FirebaseAuth auth-flow decisions.
+        auth.sendPasswordResetEmail(email).await()
+    }
+
     /** Returns the currently signed-in Firebase user, or null. */
     @Suppress("unused")
     fun currentUser(): FirebaseUser? = auth.currentUser

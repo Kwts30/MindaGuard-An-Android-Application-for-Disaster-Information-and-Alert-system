@@ -33,6 +33,7 @@ import com.mobiledev.mindaguard.backend.UserProfileViewModel
 @Composable
 fun ProfileScreen(
     onBackClick: () -> Unit = {},
+    onEditProfileClick: () -> Unit = {},
     viewModel: UserProfileViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -97,14 +98,20 @@ fun ProfileScreen(
                         }
                     }
                 }
-                is ProfileUiState.Success -> ProfileContent(profile = state.profile)
+                is ProfileUiState.Success -> ProfileContent(
+                    profile = state.profile,
+                    onEditProfileClick = onEditProfileClick
+                )
             }
         }
     }
 }
 
 @Composable
-private fun ProfileContent(profile: UserProfile) {
+private fun ProfileContent(
+    profile: UserProfile,
+    onEditProfileClick: () -> Unit
+) {
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -186,7 +193,7 @@ private fun ProfileContent(profile: UserProfile) {
 
                 // Edit button
                 Button(
-                    onClick = { },
+                    onClick = onEditProfileClick,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)

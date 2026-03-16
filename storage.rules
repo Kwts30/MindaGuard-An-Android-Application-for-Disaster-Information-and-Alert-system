@@ -1,0 +1,21 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Users can read/write only their own profile pictures
+    // Path used by app: profile_pictures/{uid}/{profileId}.jpg
+    match /profile_pictures/{uid}/{allPaths=**} {
+      allow read, write: if isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Default deny
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
