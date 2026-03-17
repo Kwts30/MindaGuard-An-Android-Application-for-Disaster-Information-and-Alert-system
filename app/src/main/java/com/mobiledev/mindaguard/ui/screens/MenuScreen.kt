@@ -46,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.mobiledev.mindaguard.R
 import com.mobiledev.mindaguard.theme.*
 import com.mobiledev.mindaguard.ui.menu.MenuActionCallbacks
@@ -60,6 +61,7 @@ import com.mobiledev.mindaguard.ui.menu.MenuActionCallbacks
 @Composable
 fun MenuScreen(
     userName: String = "User Name",
+    photoUrl: String = "",
     versionName: String = "Version 0.1-BETA",
     isAdmin: Boolean = false,
     actions: MenuActionCallbacks = MenuActionCallbacks()
@@ -112,7 +114,20 @@ fun MenuScreen(
                         color = Color.White
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Icon(imageVector = Icons.Filled.Person, contentDescription = "User", tint = Color.Black)
+                            if (photoUrl.isNotBlank()) {
+                                AsyncImage(
+                                    model = photoUrl,
+                                    contentDescription = "User photo",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Filled.Person,
+                                    contentDescription = "User",
+                                    tint = Color.Black
+                                )
+                            }
                         }
                     }
                     Spacer(modifier = Modifier.width(12.dp))
@@ -284,5 +299,10 @@ private fun DividerLine() {
 @Preview(showBackground = true)
 @Composable
 private fun MenuScreenPreview() {
-    MenuScreen(userName = "Preview User", versionName = "Version 1.0", actions = MenuActionCallbacks())
+    MenuScreen(
+        userName = "Preview User",
+        photoUrl = "",
+        versionName = "Version 1.0",
+        actions = MenuActionCallbacks()
+    )
 }

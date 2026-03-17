@@ -229,12 +229,14 @@ fun AppNav() {
 
                 composable(Screen.Menu.route) {
                     val context = LocalContext.current
-                    val displayName = (profileUiState as? ProfileUiState.Success)
-                        ?.profile?.displayName ?: "User"
+                    val profile = (profileUiState as? ProfileUiState.Success)?.profile
+                    val displayName = profile?.displayName ?: "User"
+                    val photoUrl = profile?.photoUrl.orEmpty()
                     val isAdmin by alertsViewModel.isAdmin.collectAsState()
 
                     MenuScreen(
                         userName = displayName,
+                        photoUrl = photoUrl,
                         isAdmin  = isAdmin,
                         actions = MenuActionCallbacks(
                             onUserProfileClick = {
