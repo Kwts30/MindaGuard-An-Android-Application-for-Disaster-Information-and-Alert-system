@@ -23,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Warning
@@ -230,6 +231,9 @@ fun MenuScreen(
                 Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
                     MenuRow(icon = Icons.Filled.Notifications, iconTint = Color.Black,
                         title = "Notification & Preferences", onClick = { actions.onNotificationsClick() })
+                    DividerLine()
+                    MenuRow(icon = Icons.Filled.Lock, iconTint = Color.Black,
+                        title = "Change Password", onClick = { actions.onChangePasswordClick() })
                     DividerLine()
                     MenuRow(icon = Icons.Filled.Info, iconTint = Color.Black,
                         title = "Information", onClick = { actions.onInformationClick() })

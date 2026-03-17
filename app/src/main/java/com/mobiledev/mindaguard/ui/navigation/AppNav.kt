@@ -46,6 +46,7 @@ import com.mobiledev.mindaguard.ui.components.PillTab
 import com.mobiledev.mindaguard.ui.menu.MenuActionCallbacks
 import com.mobiledev.mindaguard.ui.screens.AdminAlertsScreen
 import com.mobiledev.mindaguard.ui.screens.AlertScreen
+import com.mobiledev.mindaguard.ui.screens.ChangePasswordScreen
 import com.mobiledev.mindaguard.ui.screens.CommunityReport
 import com.mobiledev.mindaguard.ui.screens.CreateAlertScreen
 import com.mobiledev.mindaguard.ui.screens.EditProfileScreen
@@ -64,6 +65,7 @@ sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Register : Screen("register")
     object ResetPassword : Screen("reset_password")
+    object ChangePassword : Screen("change_password")
     object Home : Screen("home")
     object Map : Screen("map")
     object Menu : Screen("menu")
@@ -266,6 +268,9 @@ fun AppNav() {
                                 }
                                 context.startActivity(intent)
                             },
+                            onChangePasswordClick = {
+                                navController.navigate(Screen.ChangePassword.route)
+                            },
                             onAppInfoClick = {
                                 val intent = Intent(
                                     Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
@@ -284,6 +289,16 @@ fun AppNav() {
                                 }
                             }
                         )
+                    )
+                }
+
+                composable(Screen.ChangePassword.route) {
+                    ChangePasswordScreen(
+                        onBackClick = { navController.popBackStack() },
+                        onSuccess = {
+                            // Return directly to Menu after successful password change
+                            navController.popBackStack(Screen.Menu.route, inclusive = false)
+                        }
                     )
                 }
 
