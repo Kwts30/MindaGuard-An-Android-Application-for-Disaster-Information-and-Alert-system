@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.mobiledev.mindaguard.R
 import com.mobiledev.mindaguard.backend.ProfileUiState
 import com.mobiledev.mindaguard.backend.UserProfile
@@ -126,12 +127,21 @@ private fun ProfileContent(
                 .background(Color(0xFFD8D4CF)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = "Avatar",
-                tint = Color(0xFF4A4A4A),
-                modifier = Modifier.size(56.dp)
-            )
+            if (profile.photoUrl.isNotBlank()) {
+                AsyncImage(
+                    model = profile.photoUrl,
+                    contentDescription = "Profile photo",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Avatar",
+                    tint = Color(0xFF4A4A4A),
+                    modifier = Modifier.size(56.dp)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
