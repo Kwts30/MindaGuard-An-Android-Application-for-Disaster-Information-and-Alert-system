@@ -38,6 +38,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 fun LoginScreen(
     onLoginSuccess: () -> Unit = {},
     onNavigateToRegister: () -> Unit = {},
+    onForgotPasswordClick: (() -> Unit)? = null,
     viewModel: LoginViewModel = viewModel()
 ) {
     var email by rememberSaveable { mutableStateOf("") }
@@ -136,16 +137,22 @@ fun LoginScreen(
                     onRetry = ::submitLogin,
                     onLoginClick = ::submitLogin,
                     onForgotPasswordClick = {
-                        forgotPasswordEmail = email
-                        showForgotPasswordDialog = true
-                        viewModel.resetForgotPasswordState()
+                        // Option B: navigate to dedicated reset-password screen when provided.
+                        if (onForgotPasswordClick != null) {
+                            onForgotPasswordClick()
+                        } else {
+                            // Fallback (Option A): use dialog flow.
+                            forgotPasswordEmail = email
+                            showForgotPasswordDialog = true
+                            viewModel.resetForgotPasswordState()
+                        }
                     },
                     onNavigateToRegister = onNavigateToRegister
                 )
             }
         }
 
-        if (showForgotPasswordDialog) {
+        if (onForgotPasswordClick == null && showForgotPasswordDialog) {
             ForgotPasswordDialog(
                 email = forgotPasswordEmail,
                 onEmailChange = {

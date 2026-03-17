@@ -58,10 +58,12 @@ import com.mobiledev.mindaguard.ui.screens.MenuScreen
 import com.mobiledev.mindaguard.ui.screens.MyReportsScreen
 import com.mobiledev.mindaguard.ui.screens.ProfileScreen
 import com.mobiledev.mindaguard.ui.screens.RegisterScreen
+import com.mobiledev.mindaguard.ui.screens.ResetPasswordScreen
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Register : Screen("register")
+    object ResetPassword : Screen("reset_password")
     object Home : Screen("home")
     object Map : Screen("map")
     object Menu : Screen("menu")
@@ -188,7 +190,17 @@ fun AppNav() {
                         },
                         onNavigateToRegister = {
                             navController.navigate(Screen.Register.route)
+                        },
+                        onForgotPasswordClick = {
+                            navController.navigate(Screen.ResetPassword.route)
                         }
+                    )
+                }
+
+                composable(Screen.ResetPassword.route) {
+                    ResetPasswordScreen(
+                        onBackClick = { navController.popBackStack() },
+                        onResetLinkSent = { navController.popBackStack() }
                     )
                 }
 
