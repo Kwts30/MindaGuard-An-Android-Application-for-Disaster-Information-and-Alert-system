@@ -14,7 +14,8 @@ data class UserProfile(
     val email: String = "",
     val mobile: String = "",
     val district: String = "",
-    val barangay: String = ""
+    val barangay: String = "",
+    val photoUrl: String = ""
 ) {
     val fullName: String get() = "$firstName $lastName".trim()
     val displayName: String get() = if (fullName.isNotBlank()) fullName else email
@@ -72,7 +73,8 @@ class UserProfileViewModel : ViewModel() {
                     email     = snapshot?.getString("email")     ?: user.email ?: "",
                     mobile    = snapshot?.getString("mobile")    ?: "",
                     district  = snapshot?.getString("district")  ?: "",
-                    barangay  = snapshot?.getString("barangay")  ?: ""
+                    barangay  = snapshot?.getString("barangay")  ?: "",
+                    photoUrl  = snapshot?.getString("photoUrl")  ?: ""
                 )
                 _uiState.value = ProfileUiState.Success(profile)
             }

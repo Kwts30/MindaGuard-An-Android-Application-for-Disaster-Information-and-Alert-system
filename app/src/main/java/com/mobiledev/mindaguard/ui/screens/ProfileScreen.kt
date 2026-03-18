@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.mobiledev.mindaguard.R
 import com.mobiledev.mindaguard.backend.ProfileUiState
 import com.mobiledev.mindaguard.backend.UserProfile
@@ -33,6 +34,7 @@ import com.mobiledev.mindaguard.backend.UserProfileViewModel
 @Composable
 fun ProfileScreen(
     onBackClick: () -> Unit = {},
+    onEditProfileClick: () -> Unit = {},
     viewModel: UserProfileViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -97,14 +99,20 @@ fun ProfileScreen(
                         }
                     }
                 }
-                is ProfileUiState.Success -> ProfileContent(profile = state.profile)
+                is ProfileUiState.Success -> ProfileContent(
+                    profile = state.profile,
+                    onEditProfileClick = onEditProfileClick
+                )
             }
         }
     }
 }
 
 @Composable
-private fun ProfileContent(profile: UserProfile) {
+private fun ProfileContent(
+    profile: UserProfile,
+    onEditProfileClick: () -> Unit
+) {
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -119,12 +127,21 @@ private fun ProfileContent(profile: UserProfile) {
                 .background(Color(0xFFD8D4CF)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = "Avatar",
-                tint = Color(0xFF4A4A4A),
-                modifier = Modifier.size(56.dp)
-            )
+            if (profile.photoUrl.isNotBlank()) {
+                AsyncImage(
+                    model = profile.photoUrl,
+                    contentDescription = "Profile photo",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Avatar",
+                    tint = Color(0xFF4A4A4A),
+                    modifier = Modifier.size(56.dp)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -186,7 +203,7 @@ private fun ProfileContent(profile: UserProfile) {
 
                 // Edit button
                 Button(
-                    onClick = { },
+                    onClick = onEditProfileClick,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)

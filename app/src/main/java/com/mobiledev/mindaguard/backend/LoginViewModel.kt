@@ -15,6 +15,13 @@ sealed class LoginUiState {
     data class Error(val message: String) : LoginUiState()
 }
 
+sealed class ForgotPasswordUiState {
+    object Idle : ForgotPasswordUiState()
+    object Loading : ForgotPasswordUiState()
+    data class Success(val message: String) : ForgotPasswordUiState()
+    data class Error(val message: String) : ForgotPasswordUiState()
+}
+
 @Suppress("unused")
 class LoginViewModel(
     private val repository: AuthRepository = AuthRepository()
@@ -22,6 +29,9 @@ class LoginViewModel(
 
     private val _uiState = MutableStateFlow<LoginUiState>(LoginUiState.Idle)
     val uiState: StateFlow<LoginUiState> = _uiState
+
+    private val _forgotPasswordUiState = MutableStateFlow<ForgotPasswordUiState>(ForgotPasswordUiState.Idle)
+    val forgotPasswordUiState: StateFlow<ForgotPasswordUiState> = _forgotPasswordUiState
 
     fun login(email: String, password: String, onSuccess: () -> Unit) {
         if (email.isBlank() || password.isBlank()) {
@@ -50,5 +60,33 @@ class LoginViewModel(
 
     fun resetState() {
         _uiState.value = LoginUiState.Idle
+    }
+
+    fun sendPasswordReset(email: String) {
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()) {
+            _forgotPasswordUiState.value = ForgotPasswordUiState.Error("Enter a valid email address")
+            return
+        }
+
+        viewModelScope.launch {
+            _forgotPasswordUiState.value = ForgotPasswordUiState.Loading
+            try {
+                // TODO: Call FirebaseAuth.sendPasswordResetEmail(email) in final auth wiring.
+                repository.sendPasswordResetEmail(email.trim())
+                _forgotPasswordUiState.value = ForgotPasswordUiState.Success(
+                    "Password reset link sent. Check your email."
+                )
+            } catch (e: Exception) {
+                val msg = e.message ?: ""
+                _forgotPasswordUiState.value = ForgotPasswordUiState.Error(
+                    if (isNetworkError(msg)) "Poor connection. Tap to try again."
+                    else msg.ifBlank { "Unable to send reset link. Please try again." }
+                )
+            }
+        }
+    }
+
+    fun resetForgotPasswordState() {
+        _forgotPasswordUiState.value = ForgotPasswordUiState.Idle
     }
 }

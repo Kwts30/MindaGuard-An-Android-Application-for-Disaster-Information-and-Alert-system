@@ -7,6 +7,7 @@ package com.mobiledev.mindaguard.ui.menu
 data class MenuActionCallbacks(
     val onUserProfileClick: () -> Unit = {},
     val onMyReportsClick: () -> Unit = {},
+    val onChangePasswordClick: () -> Unit = {},
     val onAdminPanelClick: () -> Unit = {},
     val onNotificationsClick: () -> Unit = {},
     val onInformationClick: () -> Unit = {},

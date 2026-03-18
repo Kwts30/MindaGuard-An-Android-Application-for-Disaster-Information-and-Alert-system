@@ -87,7 +87,12 @@ class RegisterViewModel(
                                 "lastName"  to lastName.trim(),
                                 "email"     to email.trim(),
                                 "mobile"    to mobile.trim(),
-                                "barangay"  to barangay
+                                "district"  to district,
+                                "barangay"  to barangay,
+                                // Ensure profile editing has a consistent starting point.
+                                // The actual profile doc will be created lazily by ProfilesRepository.
+                                "activeProfileId" to "",
+                                "defaultProfileId" to ""
                             )).await()
                     } catch (_: Exception) {}
                 }

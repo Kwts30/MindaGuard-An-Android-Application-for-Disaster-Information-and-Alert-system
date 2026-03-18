@@ -46,8 +46,10 @@ import com.mobiledev.mindaguard.ui.components.PillTab
 import com.mobiledev.mindaguard.ui.menu.MenuActionCallbacks
 import com.mobiledev.mindaguard.ui.screens.AdminAlertsScreen
 import com.mobiledev.mindaguard.ui.screens.AlertScreen
+import com.mobiledev.mindaguard.ui.screens.ChangePasswordScreen
 import com.mobiledev.mindaguard.ui.screens.CommunityReport
 import com.mobiledev.mindaguard.ui.screens.CreateAlertScreen
+import com.mobiledev.mindaguard.ui.screens.EditProfileScreen
 import com.mobiledev.mindaguard.ui.screens.EarthquakeAlarmScreen
 import com.mobiledev.mindaguard.ui.screens.EarthquakeAlertScreen
 import com.mobiledev.mindaguard.ui.screens.EmergencyScreen
@@ -57,16 +59,20 @@ import com.mobiledev.mindaguard.ui.screens.MenuScreen
 import com.mobiledev.mindaguard.ui.screens.MyReportsScreen
 import com.mobiledev.mindaguard.ui.screens.ProfileScreen
 import com.mobiledev.mindaguard.ui.screens.RegisterScreen
+import com.mobiledev.mindaguard.ui.screens.ResetPasswordScreen
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Register : Screen("register")
+    object ResetPassword : Screen("reset_password")
+    object ChangePassword : Screen("change_password")
     object Home : Screen("home")
     object Map : Screen("map")
     object Menu : Screen("menu")
     object Alerts : Screen("alerts")
     object Emergency : Screen("emergency")
     object Profile : Screen("profile")
+    object EditProfile : Screen("edit_profile")
     object CreateAlert : Screen("create_alert")
     object MyReports : Screen("my_reports")
     object AdminAlerts : Screen("admin_alerts")
@@ -186,7 +192,17 @@ fun AppNav() {
                         },
                         onNavigateToRegister = {
                             navController.navigate(Screen.Register.route)
+                        },
+                        onForgotPasswordClick = {
+                            navController.navigate(Screen.ResetPassword.route)
                         }
+                    )
+                }
+
+                composable(Screen.ResetPassword.route) {
+                    ResetPasswordScreen(
+                        onBackClick = { navController.popBackStack() },
+                        onResetLinkSent = { navController.popBackStack() }
                     )
                 }
 
@@ -227,12 +243,14 @@ fun AppNav() {
 
                 composable(Screen.Menu.route) {
                     val context = LocalContext.current
-                    val displayName = (profileUiState as? ProfileUiState.Success)
-                        ?.profile?.displayName ?: "User"
+                    val profile = (profileUiState as? ProfileUiState.Success)?.profile
+                    val displayName = profile?.displayName ?: "User"
+                    val photoUrl = profile?.photoUrl.orEmpty()
                     val isAdmin by alertsViewModel.isAdmin.collectAsState()
 
                     MenuScreen(
                         userName = displayName,
+                        photoUrl = photoUrl,
                         isAdmin  = isAdmin,
                         actions = MenuActionCallbacks(
                             onUserProfileClick = {
@@ -249,6 +267,9 @@ fun AppNav() {
                                     putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
                                 }
                                 context.startActivity(intent)
+                            },
+                            onChangePasswordClick = {
+                                navController.navigate(Screen.ChangePassword.route)
                             },
                             onAppInfoClick = {
                                 val intent = Intent(
@@ -268,6 +289,16 @@ fun AppNav() {
                                 }
                             }
                         )
+                    )
+                }
+
+                composable(Screen.ChangePassword.route) {
+                    ChangePasswordScreen(
+                        onBackClick = { navController.popBackStack() },
+                        onSuccess = {
+                            // Return directly to Menu after successful password change
+                            navController.popBackStack(Screen.Menu.route, inclusive = false)
+                        }
                     )
                 }
 
@@ -317,7 +348,15 @@ fun AppNav() {
                 composable(Screen.Profile.route) {
                     ProfileScreen(
                         onBackClick = { navController.popBackStack() },
+                        onEditProfileClick = { navController.navigate(Screen.EditProfile.route) },
                         viewModel = profileViewModel
+                    )
+                }
+
+                composable(Screen.EditProfile.route) {
+                    EditProfileScreen(
+                        onBackClick = { navController.popBackStack() },
+                        profileViewModel = profileViewModel
                     )
                 }
 

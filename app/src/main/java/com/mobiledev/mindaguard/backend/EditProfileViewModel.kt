@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.StorageException
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +26,7 @@ class EditProfileViewModel : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance(FirebaseApp.getInstance(), "default")
     private val storage = FirebaseStorage.getInstance()
+    private val profilesRepository = ProfilesRepository(auth = auth, db = db)
 
     private val _uiState = MutableStateFlow<EditProfileUiState>(EditProfileUiState.Idle)
     @Suppress("unused")
@@ -39,8 +41,10 @@ class EditProfileViewModel : ViewModel() {
         val uid = auth.currentUser?.uid ?: return
         viewModelScope.launch {
             try {
-                val snapshot = db.collection("users").document(uid).get().await()
-                _photoUrl.value = snapshot.getString("photoUrl")
+                // Prefer active profile photo
+                profilesRepository.ensureDefaultProfile()
+                val profile = profilesRepository.getActiveProfile()
+                _photoUrl.value = profile.photoUrl
             } catch (_: Exception) { }
         }
     }
@@ -64,30 +68,38 @@ class EditProfileViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.value = EditProfileUiState.Loading
             try {
-                // Upload profile picture if a new one was picked
+                // Ensure an active profile exists (lazy migration from legacy /users/{uid})
+                val activeProfileId = profilesRepository.ensureDefaultProfile()
+
+                // Upload photo to a per-profile path
                 val uploadedUrl: String? = if (pickedImageUri != null) {
-                    val ref = storage.reference
-                        .child("profile_pictures/${user.uid}.jpg")
-                    ref.putFile(pickedImageUri).await()
-                    ref.downloadUrl.await().toString()
+                    try {
+                        val ref = storage.reference
+                            .child("profile_pictures/${user.uid}/${activeProfileId}.jpg")
+                        ref.putFile(pickedImageUri).await()
+                        ref.downloadUrl.await().toString()
+                    } catch (e: Exception) {
+                        val msg = when (e) {
+                            is StorageException -> e.message ?: "Storage upload failed"
+                            else -> e.message ?: "Storage upload failed"
+                        }
+                        throw IllegalStateException("Photo upload failed: $msg", e)
+                    }
                 } else null
 
-                // Build update map
-                val updates = mutableMapOf<String, Any>(
-                    "firstName" to firstName.trim(),
-                    "lastName"  to lastName.trim(),
-                    "mobile"    to mobile.trim(),
-                    "district"  to district,
-                    "barangay"  to barangay
+                profilesRepository.updateActiveProfile(
+                    firstName = firstName,
+                    lastName = lastName,
+                    mobile = mobile,
+                    district = district,
+                    barangay = barangay,
+                    photoUrl = uploadedUrl
                 )
-                if (uploadedUrl != null) {
-                    updates["photoUrl"] = uploadedUrl
+
+                if (!uploadedUrl.isNullOrBlank()) {
                     _photoUrl.value = uploadedUrl
                 }
 
-                db.collection("users").document(user.uid)
-                    .update(updates)
-                    .await()
 
                 _uiState.value = EditProfileUiState.Success
                 onDone()
